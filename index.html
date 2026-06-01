@@ -2,41 +2,58 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>VR 단안 조준 원 고립 시스템 V32.0</title>
+  <title>VR MFBF 시선 조준 훈련 V14.3 (단안 원 고립)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; user-select: none; }
+    body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
     #control-panel {
       position: absolute; top: 15px; left: 15px; z-index: 99999;
       background: rgba(11, 15, 26, 0.95); color: white; padding: 22px;
       border-radius: 12px; border: 1px solid #3b82f6; width: 290px;
       max-height: 85vh; overflow-y: auto;
     }
-    .panel-title { font-size: 15px; font-weight: bold; color: #38bdf8; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #3b82f6; padding-bottom: 8px; line-height: 1.4; }
+    .panel-title { font-size: 16px; font-weight: bold; color: #38bdf8; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #3b82f6; padding-bottom: 8px; }
     .panel-group { margin-bottom: 14px; }
     label { display: block; margin-bottom: 6px; font-size: 13px; color: #cbd5e1; font-weight: bold; }
     select, input[type="range"] { width: 100%; padding: 8px; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
     .display-value { float: right; color: #38bdf8; font-weight: bold; }
-    .btn { width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 14px; }
+    .btn { width: 100%; padding: 11px; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 14px; }
     #start-btn { background: #22c55e; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
-    #score-board { position: fixed; top: 20px; right: 20px; z-index: 99999; background: rgba(15, 23, 42, 0.95); color: #22c55e; padding: 15px 22px; border-radius: 8px; border: 2px solid #3b82f6; font-family: monospace; font-size: 16px; width: 240px; }
-    .exit-vr-btn { width: 100%; background: #ef4444; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 8px; display: none; }
+    #score-board { position: fixed; top: 20px; right: 20px; z-index: 99999; background: rgba(15, 23, 42, 0.95); color: #22c55e; padding: 15px 22px; border-radius: 8px; border: 2px solid #22c55e; font-family: monospace; font-size: 16px; width: 240px; }
+    .exit-vr-btn { width: 100%; background: #ef4444; color: white; border: none; border-radius: 4px; padding: 6px 10px; font-weight: bold; cursor: pointer; font-size: 11px; margin-top: 8px; display: none; }
     #result-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100000; background: rgba(11, 16, 26, 0.98); color: white; padding: 35px 50px; border-radius: 15px; border: 3px solid #38bdf8; text-align: center; }
     #result-modal h1 { color: #38bdf8; margin-top: 0; }
     #result-modal .final-score { font-size: 42px; color: #eab308; margin: 20px 0; font-weight: bold; }
     #result-modal .reset-btn { background: #38bdf8; color: #000; padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
-    .center-branding { font-size: 11px; color: #38bdf8; text-align: center; margin-top: 8px; font-weight: bold; }
   </style>
+  
+  <script>
+    AFRAME.registerComponent('stereo-eye-lock', {
+      schema: { eye: {type: 'string', default: 'both'} },
+      init: function () {
+        this.layerMask = (this.data.eye === 'left') ? 1 : (this.data.eye === 'right' ? 2 : 0);
+        this.el.addEventListener('object3dset', () => { this.applyLayer(); });
+        this.applyLayer();
+      },
+      applyLayer: function () {
+        const obj = this.el.getObject3D('mesh') || this.el.object3D;
+        if (obj) {
+          obj.layers.set(this.layerMask);
+          obj.traverse(child => { if(child.layers) child.layers.set(this.layerMask); });
+        }
+      }
+    });
+  </script>
 </head>
 <body>
 
   <div id="control-panel">
-    <div class="panel-title">한국시기능훈련센터 성서계명대점<br><span style="font-size:12px; color:#aaa; font-weight:normal;">단안 조준경 절대 고립 프로토콜 V32.0</span></div>
+    <div class="panel-title">🎯 거리 자동보완 MFBF V14.3</div>
     
     <div class="panel-group">
-      <label>⚙️ 조준선 쪼개짐 원천 차단</label>
-      <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all; font-weight: bold;">
-        하드웨어 매핑 기술을 적용하여 지정된 단안 렌즈 외 반대편 안구의 조준 원을 물리적으로 소멸시킵니다. 원이 두 개로 보이는 현상이 완벽히 해결됩니다.
+      <label>⚙️ 자동 거리 제어 시스템</label>
+      <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all;">
+        환자의 헤드셋 착용 위치와 초기 오차를 실시간 계산하여 **풍선과의 조준 거리를 자동으로 상쇄·보정**합니다.
       </div>
     </div>
 
@@ -63,17 +80,16 @@
   </div>
 
   <div id="score-board">
-    <div style="color: #ef4444; font-size: 18px; margin-bottom: 5px; font-weight: bold;">TIME: <span id="val-time">00:00</span></div>
-    <div style="color: #eab308; font-size: 13px; font-weight: bold; margin-bottom: 4px;">활성 턴: <span id="active-eye-txt" style="color:#ff2a2a;">좌안 (초록풍선)</span></div>
-    <div style="color: #ffffff;">SCORE: <span id="val-score">0000</span></div>
-    <div style="color: #cbd5e1; font-size: 11px; margin-top: 6px;" id="status-txt">준비 버튼을 누르세요.</div>
+    <div style="color: #ef4444; font-size: 18px; margin-bottom: 5px;">TIME: <span id="val-time">00:00</span></div>
+    <div style="color: #eab308; font-size: 13px; font-weight: bold; margin-bottom: 4px;">활성 타겟: <span id="active-eye-txt" style="color:#ff2a2a;">왼쪽눈 (빨강)</span></div>
+    <div>SCORE: <span id="val-score">0000</span></div>
+    <div style="color: #cbd5e1; font-size: 11px; margin-top: 4px;" id="status-txt">준비 버튼을 누르세요.</div>
     <button id="exit-vr-control" class="exit-vr-btn" onclick="exitVRModeManually()">🔴 훈련 중단 및 복귀</button>
-    <div class="center-branding">성서계명대점</div>
   </div>
 
   <div id="result-modal">
     <h1>🎉 안구운동 프로그램 완료 🎉</h1>
-    <p style="color: #aaa; margin: 0;">데이터 분석 및 임상 프로토콜 종료</p>
+    <p style="color: #aaa; margin: 0;">종료 팡파르와 함께 훈련이 완료되었습니다.</p>
     <div class="final-score"><span id="modal-final-score">0</span> 점</div>
     <button class="reset-btn" onclick="location.reload()">처음으로</button>
   </div>
@@ -83,52 +99,42 @@
       <canvas id="bgCheckerCanvas" width="512" height="512"></canvas>
     </a-assets>
 
-    <a-sky id="rotating-bg" src="#bgCheckerCanvas" radius="50" material="shader: flat; repeat: 16 16; side: back;"></a-sky>
+    <a-sky id="rotating-bg" src="#bgCheckerCanvas" radius="50" material="shader: flat; repeat: 16 16; side: back;" stereo-eye-lock="eye: both"></a-sky>
 
     <a-entity id="cameraRig">
       <a-entity id="mainCamera" camera look-controls position="0 1.6 0">
-        <a-entity id="centerFixationRay" raycaster="objects: .gaze-secure-trigger; far: 100; interval: 10;"></a-entity>
+        <a-entity id="centerFixationRay" raycaster="objects: .gaze-secure-trigger; far: 100; interval: 15;"></a-entity>
         
-        <a-ring id="gaze-ring-right" radius-inner="0.022" radius-outer="0.032" color="#10b981" position="0 0 -3.4" material="shader: flat; opacity: 1.0; depthTest: false;" visible="false"></a-ring>
-        
-        <a-ring id="gaze-ring-left" radius-inner="0.022" radius-outer="0.032" color="#ff2a2a" position="0 0 -3.4" material="shader: flat; opacity: 1.0; depthTest: false;" visible="false"></a-ring>
+        <a-ring id="gaze-ring-left" radius-inner="0.025" radius-outer="0.038" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: left" visible="false"></a-ring>
+        <a-ring id="gaze-ring-right" radius-inner="0.025" radius-outer="0.038" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: right" visible="false"></a-ring>
       </a-entity>
     </a-entity>
 
     <a-entity id="magic-eye-board" visible="true">
-      <a-entity id="global-target-space"></a-entity>
+      
+      <a-entity id="left-eye-container" stereo-eye-lock="eye: left">
+        <a-sphere id="balloon-left" color="#ff2a2a" material="roughness: 0.15; metalness: 0.2;">
+          <a-cone id="cone-left" radius-top="0.01" color="#cc1111"></a-cone>
+        </a-sphere>
+      </a-entity>
+      
+      <a-entity id="right-eye-container" stereo-eye-lock="eye: right">
+        <a-sphere id="balloon-right" color="#10b981" material="roughness: 0.15; metalness: 0.2;">
+          <a-cone id="cone-right" radius-top="0.01" color="#047857"></a-cone>
+        </a-sphere>
+      </a-entity>
+
+      <a-entity id="gaze-collision-trigger" class="gaze-secure-trigger" geometry="primitive: sphere; radius: 0.35" material="visible: false;" stereo-eye-lock="eye: both"></a-entity>
+      
     </a-entity>
 
     <a-entity id="particle-group"></a-entity>
   </a-scene>
 
   <script>
-    // VR 하드웨어 렌즈 레벨에서 레이어를 완벽 분해하여 링 쪼개짐을 차단하는 렌더링 엔진 컴포넌트
-    AFRAME.registerComponent('vr-hardware-lens-isolator', {
-      init: function () {
-        this.el.addEventListener('camera-set-active', (evt) => {
-          const cameraObj = evt.detail.camera;
-          if (cameraObj.isArrayCamera) {
-            cameraObj.cameras.forEach((cam) => {
-              if (cam.bounds.x > 0) {
-                cam.layers.enable(1);  // 우안 렌즈: 레이어 1 강제 매핑 (초록 원 가시화)
-                cam.layers.disable(2); // 우안 렌즈: 레이어 2 차단 (빨간 원 완전 소멸)
-              } else {
-                cam.layers.enable(2);  // 좌안 렌즈: 레이어 2 강제 매핑 (빨간 원 가시화)
-                cam.layers.disable(1); // 좌안 렌즈: 레이어 1 차단 (초록 원 완전 소멸)
-              }
-              cam.layers.enable(0);    // 주변시 배경은 공통 노출
-            });
-          }
-        });
-      }
-    });
-    document.getElementById('mainCamera').setAttribute('vr-hardware-lens-isolator', '');
-
-    // 배경 패턴 빌드
     const bgCanvas = document.getElementById('bgCheckerCanvas');
     const bgCtx = bgCanvas.getContext('2d');
-    const bSize = 512; const bRows = 6; const bCols = 6;
+    const bSize = 512; const bRows = 4; const bCols = 4;
     const bW = bSize / bCols; const bH = bSize / bRows;
     for (let r = 0; r < bRows; r++) {
       for (let c = 0; c < bCols; c++) {
@@ -141,7 +147,7 @@
     let rotationSpeed = 2; let bgAngle = 0; let isTrainingActive = false; let isPopping = false; 
 
     let elapsedInterval = null; let totalSecondsElapsed = 0; let targetSeconds = 600;      
-    let activeTurn = "left"; // 최초 좌안(초록풍선 + 빨간원) 프로토콜 시작
+    let activeTurn = "left"; 
     let currentX = 0, currentY = 1.6, currentZ = -3.5;
 
     document.getElementById('range-slider').addEventListener('input', (e) => {
@@ -154,22 +160,9 @@
       document.getElementById('bg-speed-txt').innerText = rotationSpeed;
     });
 
-    // 안구별 독립 시표 및 링 단독 노출 연산 함수
     function renderAlternatingTargets() {
       if (!isTrainingActive) return;
 
-      const targetSpace = document.getElementById('global-target-space');
-      const ringRight = document.getElementById('gaze-ring-right');
-      const ringLeft = document.getElementById('gaze-ring-left');
-      
-      if (!targetSpace || !ringRight || !ringLeft) return;
-
-      // 이전 생성물 완전 소거
-      targetSpace.innerHTML = "";
-      ringRight.setAttribute('visible', 'false');
-      ringLeft.setAttribute('visible', 'false');
-
-      // 환자 실시간 카메라 기저 연산
       const cameraEl = document.getElementById('mainCamera');
       let camPos = {x: 0, y: 1.6, z: 0};
       if (cameraEl && cameraEl.object3D) {
@@ -178,106 +171,86 @@
         camPos.z = cameraEl.object3D.position.z;
       }
 
-      let radiusRadius = 0.22; 
+      let radiusRadius = 0.25; 
+
       let baseZ = camPos.z - 3.5; 
       let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 2.2);
       let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.6); 
 
-      if (randY < camPos.y - 0.9) randY = camPos.y - 0.9;
-      if (randY > camPos.y + 1.1) randY = camPos.y + 1.1;
+      if (randY < camPos.y - 1.0) randY = camPos.y - 1.0;
+      if (randY > camPos.y + 1.2) randY = camPos.y + 1.2;
 
-      currentX = randX; currentY = randY; currentZ = baseZ;
+      currentX = randX;
+      currentY = randY;
+      currentZ = baseZ;
 
-      // [핵심 변경] 조준 링 독립 고립 연산
-      if (activeTurn === "right") {
-        // 오른쪽 눈 활성: 빨간풍선 + 초록색 원 (좌안엔 풍선/원 모두 안 보임)
-        document.getElementById('active-eye-txt').innerText = "우안 (빨강풍선 + 초록원)";
-        document.getElementById('active-eye-txt').style.color = "#10b981";
+      const cLeft = document.getElementById('left-eye-container');
+      const cRight = document.getElementById('right-eye-container');
+      const bLeft = document.getElementById('balloon-left');
+      const bRight = document.getElementById('balloon-right');
+      const coneLeft = document.getElementById('cone-left');
+      const coneRight = document.getElementById('cone-right');
+      const secureTrigger = document.getElementById('gaze-collision-trigger');
 
-        ringRight.setAttribute('position', `0 0 ${baseZ + 0.05}`);
-        ringRight.setAttribute('visible', 'true');
+      // [핵심 수정] 풍선 교대 시선에 맞추어 오직 해당 안구의 흰 원 조준선만 노출시킴으로써 쪼개짐 원천 차단
+      const ringLeft = document.getElementById('gaze-ring-left');
+      const ringRight = document.getElementById('gaze-ring-right');
 
-        // 풍선 구조체 빌드
-        const container = document.createElement('a-entity');
-        const balloon = document.createElement('a-sphere');
-        balloon.setAttribute('color', '#ff2a2a');
-        balloon.setAttribute('radius', radiusRadius);
-        balloon.setAttribute('material', 'roughness: 0.15; metalness: 0.2;');
-
-        const cone = document.createElement('a-cone');
-        cone.setAttribute('color', '#cc1111');
-        cone.setAttribute('radius-top', '0.01');
-        cone.setAttribute('radius-bottom', radiusRadius * 0.15);
-        cone.setAttribute('height', radiusRadius * 0.25);
-        cone.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
-
-        balloon.appendChild(cone);
-        container.appendChild(balloon);
-        container.setAttribute('position', `${randX} ${randY} ${baseZ}`);
-
-        // 레이어 차단 컴포넌트 주입
-        container.addEventListener('object3dset', () => {
-          const obj = container.object3D;
-          if(obj) {
-            obj.layers.disable(0);
-            obj.layers.enable(1);  // 우안 카메라에만 투사
-            obj.layers.disable(2); // 좌안 카메라 뷰포트에서 삭제
-            obj.traverse(c => { if(c.layers) { c.layers.disable(0); c.layers.enable(1); c.layers.disable(2); } });
-          }
-        });
-        targetSpace.appendChild(container);
-
-      } else {
-        // 왼쪽 눈 활성: 초록풍선 + 빨간색 원 (우안엔 풍선/원 모두 안 보임)
-        document.getElementById('active-eye-txt').innerText = "좌안 (초록풍선 + 빨간원)";
+      if (activeTurn === "left") {
+        document.getElementById('active-eye-txt').innerText = "왼쪽눈 (빨강)";
         document.getElementById('active-eye-txt').style.color = "#ff2a2a";
 
-        ringLeft.setAttribute('position', `0 0 ${baseZ + 0.05}`);
-        ringLeft.setAttribute('visible', 'true');
+        // 왼쪽 눈 풍선 켜기 / 오른쪽 눈 완전 가리기 (V14.2 원본 로직)
+        cLeft.setAttribute('visible', 'true');
+        cRight.setAttribute('visible', 'false');
 
-        const container = document.createElement('a-entity');
-        const balloon = document.createElement('a-sphere');
-        balloon.setAttribute('color', '#10b981');
-        balloon.setAttribute('radius', radiusRadius);
-        balloon.setAttribute('material', 'roughness: 0.15; metalness: 0.2;');
+        // [수정] 조준선 제어 : 왼쪽 눈에만 흰 원 가시화, 오른쪽 눈은 차단하여 절대 두 개로 안 보임
+        if(ringLeft) ringLeft.setAttribute('visible', 'true');
+        if(ringRight) ringRight.setAttribute('visible', 'false');
 
-        const cone = document.createElement('a-cone');
-        cone.setAttribute('color', '#047857');
-        cone.setAttribute('radius-top', '0.01');
-        cone.setAttribute('radius-bottom', radiusRadius * 0.15);
-        cone.setAttribute('height', radiusRadius * 0.25);
-        cone.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
+        bLeft.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+        bLeft.setAttribute('radius', radiusRadius);
+        coneLeft.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
+        coneLeft.setAttribute('radius-bottom', `${radiusRadius * 0.15}`);
+        coneLeft.setAttribute('height', `${radiusRadius * 0.25}`);
+      } 
+      else {
+        document.getElementById('active-eye-txt').innerText = "오른쪽눈 (초록)";
+        document.getElementById('active-eye-txt').style.color = "#10b981";
 
-        balloon.appendChild(cone);
-        container.appendChild(balloon);
-        container.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+        // 오른쪽 눈 풍선 켜기 / 왼쪽 눈 완전 가리기 (V14.2 원본 로직)
+        cLeft.setAttribute('visible', 'false');
+        cRight.setAttribute('visible', 'true');
 
-        container.addEventListener('object3dset', () => {
-          const obj = container.object3D;
-          if(obj) {
-            obj.layers.disable(0);
-            obj.layers.enable(2);  // 좌안 카메라에만 투사
-            obj.layers.disable(1); // 우안 카메라 뷰포트에서 삭제
-            obj.traverse(c => { if(c.layers) { c.layers.disable(0); c.layers.enable(2); c.layers.disable(1); } });
-          }
-        });
-        targetSpace.appendChild(container);
+        // [수정] 조준선 제어 : 오른쪽 눈에만 흰 원 가시화, 왼쪽 눈은 차단하여 절대 두 개로 안 보임
+        if(ringLeft) ringLeft.setAttribute('visible', 'false');
+        if(ringRight) ringRight.setAttribute('visible', 'true');
+
+        bRight.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+        bRight.setAttribute('radius', radiusRadius);
+        coneRight.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
+        coneRight.setAttribute('radius-bottom', `${radiusRadius * 0.15}`);
+        coneRight.setAttribute('height', `${radiusRadius * 0.25}`);
       }
 
-      // 정조준 인터섹션 감지용 무색 트리거 동기화
-      const secureTrigger = document.createElement('a-entity');
-      secureTrigger.setAttribute('id', 'gaze-collision-trigger');
-      secureTrigger.setAttribute('class', 'gaze-secure-trigger');
-      secureTrigger.setAttribute('geometry', 'primitive: sphere; radius: 0.38');
-      secureTrigger.setAttribute('material', 'visible: false;');
-      secureTrigger.setAttribute('position', `${randX} ${randY} ${baseZ}`);
-      targetSpace.appendChild(secureTrigger);
+      if (secureTrigger) {
+        secureTrigger.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+        secureTrigger.setAttribute('geometry', 'primitive: sphere; radius: 0.38');
+        if (!isPopping && !secureTrigger.classList.contains('gaze-secure-trigger')) {
+          secureTrigger.classList.add('gaze-secure-trigger');
+        }
+      }
+    }
 
-      // 그래픽 엔진 하드웨어 메모리에 고립 신호 재전달
-      setTimeout(() => {
-        if(ringRight.object3D) { ringRight.object3D.layers.disable(0); ringRight.object3D.layers.enable(1); ringRight.object3D.layers.disable(2); }
-        if(ringLeft.object3D) { ringLeft.object3D.layers.disable(0); ringLeft.object3D.layers.enable(2); ringLeft.object3D.layers.disable(1); }
-      }, 40);
+    function setupVRHardwareLayers() {
+      const sceneEl = document.querySelector('a-scene');
+      sceneEl.addEventListener('enter-vr', () => {
+        const camera = sceneEl.camera;
+        if (camera && camera.isArrayCamera) {
+          camera.cameras[0].layers.enable(1); camera.cameras[0].layers.disable(2);
+          camera.cameras[1].layers.enable(2); camera.cameras[1].layers.disable(1);
+        }
+      });
     }
 
     function checkTargetGazeIntersection() {
@@ -289,6 +262,7 @@
 
       let raycasterComponent = raycasterEl.components.raycaster;
       if (raycasterComponent && raycasterComponent.intersections && raycasterComponent.intersections.length > 0) {
+        
         const secureTrigger = document.getElementById('gaze-collision-trigger');
         if (secureTrigger) { secureTrigger.classList.remove('gaze-secure-trigger'); }
         
@@ -304,16 +278,19 @@
 
       triggerParticlesEmission(currentX, currentY, currentZ, 20);
       
-      // 안구 고립 교대
       activeTurn = (activeTurn === "left") ? "right" : "left";
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
+
+      // 과도기 동안 조준선 원 숨기기
+      document.getElementById('gaze-ring-left').setAttribute('visible', 'false');
+      document.getElementById('gaze-ring-right').setAttribute('visible', 'false');
 
       setTimeout(() => {
         if (!isTrainingActive) return;
         isPopping = false;
         renderAlternatingTargets(); 
         document.getElementById('magic-eye-board').setAttribute('visible', 'true'); 
-      }, 450); 
+      }, 500); 
     }
 
     function animateBackground() {
@@ -347,6 +324,8 @@
     function playFanfareAndFinish() {
       isTrainingActive = false;
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
+      document.getElementById('gaze-ring-left').setAttribute('visible', 'false');
+      document.getElementById('gaze-ring-right').setAttribute('visible', 'false');
       document.getElementById('exit-vr-control').style.display = 'none';
       
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -386,12 +365,11 @@
 
     function triggerParticlesEmission(x, y, z, count) {
       const pGroup = document.getElementById('particle-group');
-      if(!pGroup) return;
       for (let i = 0; i < count; i++) {
         const p = document.createElement('a-box');
         p.setAttribute('width', '0.04'); p.setAttribute('height', '0.04'); p.setAttribute('depth', '0.04');
-        p.setAttribute('color', activeTurn === "right" ? "#10b981" : "#ff2a2a"); 
-        p.setAttribute('position', `${x} ${y} ${z}`);
+        const colors = ['#ff0055', '#ffff00', '#00ffcc', '#38bdf8'];
+        p.setAttribute('color', colors[Math.floor(Math.random() * colors.length)]); p.setAttribute('position', `${x} ${y} ${z}`);
         const vx = (Math.random() - 0.5) * 3; const vy = (Math.random() - 0.5) * 3 + 1.2; const vz = (Math.random() - 0.5) * 3;
         pGroup.appendChild(p);
         let age = 0;
@@ -407,8 +385,9 @@
     function exitVRModeManually() {
       isTrainingActive = false; isPopping = false;
       if (elapsedInterval) clearInterval(elapsedInterval);
-      const targetSpace = document.getElementById('global-target-space');
-      if(targetSpace) targetSpace.innerHTML = "";
+      document.getElementById('magic-eye-board').setAttribute('visible', 'false');
+      document.getElementById('gaze-ring-left').setAttribute('visible', 'false');
+      document.getElementById('gaze-ring-right').setAttribute('visible', 'false');
       document.getElementById('control-panel').style.display = 'block';
       document.getElementById('exit-vr-control').style.display = 'none';
       const sceneEl = document.querySelector('a-scene');
@@ -416,8 +395,7 @@
     }
 
     function startFusionTraining() {
-      isTrainingActive = true; isPopping = false; score = 0;
-      document.getElementById('val-score').innerText = "0000";
+      isTrainingActive = true; isPopping = false;
       targetSeconds = parseInt(document.getElementById('training-time-select').value);
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       document.getElementById('control-panel').style.display = 'none';
@@ -432,6 +410,7 @@
       if (sceneEl.hasLoaded) { sceneEl.enterVR(); } else { sceneEl.addEventListener('loaded', () => { sceneEl.enterVR(); }); }
     }
 
+    setupVRHardwareLayers();
     animateBackground();
     requestAnimationFrame(checkTargetGazeIntersection);
   </script>
