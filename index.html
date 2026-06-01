@@ -2,485 +2,386 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>VR 단안 차단형 안구별 색상 교대 시스템 V31.0</title>
+  <title>VR 단안 조준 원 고립 시스템 V32.0</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
-    
+    body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; user-select: none; }
     #control-panel {
       position: absolute; top: 15px; left: 15px; z-index: 99999;
-      background: rgba(11, 15, 26, 0.95); color: white; padding: 18px;
-      border-radius: 12px; border: 2px solid rgba(59, 130, 246, 0.7); width: 320px;
-      max-height: 90vh; display: flex; flex-direction: column; backdrop-filter: blur(6px);
+      background: rgba(11, 15, 26, 0.95); color: white; padding: 22px;
+      border-radius: 12px; border: 1px solid #3b82f6; width: 290px;
+      max-height: 85vh; overflow-y: auto;
     }
-    
-    .panel-header { flex-shrink: 0; margin-bottom: 10px; }
-    .panel-scroll-body { flex-grow: 1; overflow-y: auto; padding-right: 5px; margin-top: 5px; max-height: 45vh; }
-    .panel-title { font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 10px; text-align: center; border-bottom: 1px solid rgba(59, 130, 246, 0.3); padding-bottom: 6px; line-height: 1.4; }
-    .panel-group { margin-bottom: 12px; }
-    label { display: block; margin-bottom: 5px; font-size: 11px; color: #cbd5e1; font-weight: bold; }
-    select, input[type="range"] { width: 100%; padding: 7px; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 6px; box-sizing: border-box; font-size: 12px; }
+    .panel-title { font-size: 15px; font-weight: bold; color: #38bdf8; margin-bottom: 15px; text-align: center; border-bottom: 1px solid #3b82f6; padding-bottom: 8px; line-height: 1.4; }
+    .panel-group { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 6px; font-size: 13px; color: #cbd5e1; font-weight: bold; }
+    select, input[type="range"] { width: 100%; padding: 8px; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 6px; box-sizing: border-box; font-size: 13px; }
     .display-value { float: right; color: #38bdf8; font-weight: bold; }
-    
-    .btn { width: 100%; padding: 14px; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; letter-spacing: 0.5px; }
-    #start-btn { background: #16a34a; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4); margin-bottom: 5px; }
-    
-    #score-board { 
-      position: fixed; top: 20px; right: 20px; z-index: 99999; 
-      background: rgba(15, 23, 42, 0.95); color: #ffffff; padding: 18px 20px; 
-      border-radius: 12px; border: 2px solid #3b82f6; width: 240px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
-    .score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; }
-    .score-label { color: #94a3b8; font-weight: bold; font-size: 12px; }
-    .score-value { font-family: monospace; font-size: 16px; font-weight: bold; }
-    #mode-status-badge { background: #1e1b4b; color: #38bdf8; border: 1px solid #3b82f6; padding: 6px; text-align: center; border-radius: 6px; font-size: 12px; font-weight: bold; margin-bottom: 12px; }
-    .exit-vr-btn { width: 100%; background: #ef4444; color: white; border: none; border-radius: 6px; padding: 12px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 5px; display: none; }
-    .center-branding { font-size: 11px; color: #38bdf8; font-weight: bold; text-align: center; margin-top: 12px; border-top: 1px dashed rgba(56, 189, 248, 0.3); padding-top: 8px; }
-
+    .btn { width: 100%; padding: 12px; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 14px; }
+    #start-btn { background: #22c55e; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+    #score-board { position: fixed; top: 20px; right: 20px; z-index: 99999; background: rgba(15, 23, 42, 0.95); color: #22c55e; padding: 15px 22px; border-radius: 8px; border: 2px solid #3b82f6; font-family: monospace; font-size: 16px; width: 240px; }
+    .exit-vr-btn { width: 100%; background: #ef4444; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 8px; display: none; }
     #result-modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100000; background: rgba(11, 16, 26, 0.98); color: white; padding: 35px 50px; border-radius: 15px; border: 3px solid #38bdf8; text-align: center; }
-    .final-score { font-size: 32px; color: #eab308; margin: 20px 0; font-weight: bold; }
-    .reset-btn { background: #38bdf8; color: #000; padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    #result-modal h1 { color: #38bdf8; margin-top: 0; }
+    #result-modal .final-score { font-size: 42px; color: #eab308; margin: 20px 0; font-weight: bold; }
+    #result-modal .reset-btn { background: #38bdf8; color: #000; padding: 10px 25px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    .center-branding { font-size: 11px; color: #38bdf8; text-align: center; margin-top: 8px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <!-- 제어판 -->
   <div id="control-panel">
-    <div class="panel-header">
-      <div class="panel-title">한국시기능훈련센터 성서계명대점<br><span style="font-size:11px; color:#aaa; font-weight:normal;">단안 차단형 안구별 색상 교대 V31.0</span></div>
-      
-      <button id="start-btn" class="btn" onclick="startClinicalTraining()">▶️ 프로토콜 가동</button>
-      
-      <div class="panel-group" style="margin-top: 8px;">
-        <label>👁️ 임상 대상안 설정</label>
-        <select id="clinical-mode-select">
-          <option value="mfbf" selected>MFBF 모드 (우안/좌안 자동 교대)</option>
-          <option value="right-only">우안 주시 고정 (빨강풍선 + 초록원만)</option>
-          <option value="left-only">좌안 주시 고정 (초록풍선 + 빨간원만)</option>
-        </select>
+    <div class="panel-title">한국시기능훈련센터 성서계명대점<br><span style="font-size:12px; color:#aaa; font-weight:normal;">단안 조준경 절대 고립 프로토콜 V32.0</span></div>
+    
+    <div class="panel-group">
+      <label>⚙️ 조준선 쪼개짐 원천 차단</label>
+      <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all; font-weight: bold;">
+        하드웨어 매핑 기술을 적용하여 지정된 단안 렌즈 외 반대편 안구의 조준 원을 물리적으로 소멸시킵니다. 원이 두 개로 보이는 현상이 완벽히 해결됩니다.
       </div>
     </div>
 
-    <div class="panel-scroll-body">
-      <div class="panel-group" style="background: rgba(239, 68, 68, 0.15); padding: 8px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.4); margin-bottom: 10px;">
-        <span style="font-size: 11px; color: #f87171; display: block; line-height: 1.4; font-weight: bold;">
-          🎯 [V31.0 단안 완전 독립 차단 사양]<br>
-          - 우안(오른쪽): 빨간 풍선 + 초록 테두리 원 (좌안 차단)<br>
-          - 좌안(왼쪽): 초록 풍선 + 빨간 테두리 원 (우안 차단)<br>
-          - 반대편 안구에는 풍선이 완벽하게 은닉(안 보임)됩니다.
-        </span>
-      </div>
-
-      <div class="panel-group">
-        <label>🏁 배후 격자 투명도 <span class="display-value" id="bg-opacity-txt">100%</span></label>
-        <input type="range" id="bg-opacity-slider" min="0" max="100" value="100" step="10">
-      </div>
-
-      <div class="panel-group">
-        <label>🏁 배후 격자 밀도 <span class="display-value" id="grid-size-txt">6x6</span></label>
-        <input type="range" id="grid-size-slider" min="2" max="16" value="6" step="1">
-      </div>
-
-      <div class="panel-group">
-        <label>🎈 풍선 시표 크기 <span class="display-value" id="balloon-size-txt">1.0</span></label>
-        <input type="range" id="balloon-size-slider" min="0.5" max="2.0" value="1.0" step="0.1">
-      </div>
-
-      <div class="panel-group" style="border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 8px;">
-        <label>🧭 배후 격자 제어 모드</label>
-        <select id="bg-mode-select" onchange="toggleDirectionModeUI()">
-          <option value="auto-protocol" selected>자동 순환 프로토콜 모드</option>
-          <option value="manual">수동 특정 방향 고정 모드</option>
-        </select>
-      </div>
-
-      <div class="panel-group" id="auto-protocol-time-group">
-        <label>⏱️ 자동 방향 전환 주기</label>
-        <select id="protocol-interval-select">
-          <option value="120" selected>2분 단위 전환</option>
-          <option value="180">3분 단위 전환</option>
-        </select>
-      </div>
-
-      <div class="panel-group" id="manual-direction-group" style="display: none;">
-        <label>➡️ 수동 방향 지정</label>
-        <select id="bg-direction-select">
-          <option value="right">오른쪽으로 흐름</option>
-          <option value="left">왼쪽으로 흐름</option>
-          <option value="up">위로 흐름</option>
-          <option value="down">아래로 흐름</option>
-          <option value="cw">시계방향 회전</option>
-          <option value="ccw">반시계방향 회전</option>
-        </select>
-      </div>
-
-      <div class="panel-group">
-        <label>🔄 배후 격자 이동 속도 <span class="display-value" id="bg-speed-txt">3</span></label>
-        <input type="range" id="bg-speed-slider" min="1" max="10" value="3" step="1">
-      </div>
-
-      <div class="panel-group">
-        <label>🧠 격자 자극 색상 배색</label>
-        <select id="grid-color-style-select">
-          <option value="standard" selected>표준 격자 모드 (흑백 고대비)</option>
-          <option value="pink-clinical">임상용 핑크 격자 자극 모드</option>
-        </select>
-      </div>
+    <div class="panel-group">
+      <label>⏰ 총 훈련 시간 설정</label>
+      <select id="training-time-select">
+        <option value="60">1분 (테스트용)</option>
+        <option value="300">5분 (기본 안구운동)</option>
+        <option value="600" selected>10분 (정밀 집중)</option>
+      </select>
     </div>
+
+    <div class="panel-group">
+      <label>↔️ 무작위 발생 시야 반경 <span class="display-value" id="range-txt">1.40</span></label>
+      <input type="range" id="range-slider" min="0.50" max="2.40" value="1.40" step="0.10">
+    </div>
+
+    <div class="panel-group">
+      <label>🔄 배경 직선 회전 속도 <span class="display-value" id="bg-speed-txt">2</span></label>
+      <input type="range" id="bg-speed-slider" min="0" max="60" value="2" step="1">
+    </div>
+    
+    <button id="start-btn" class="btn" onclick="startFusionTraining()">▶️ 안구 운동 시작</button>
   </div>
 
-  <!-- 우측 상태창 -->
   <div id="score-board">
-    <div class="score-row" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
-      <span class="score-label" style="color: #ef4444;">⏱️ 시간경과</span>
-      <span class="score-value" id="val-time" style="color: #ef4444; font-size:18px;">00:00</span>
-    </div>
-    <div class="score-row" style="margin-top: 10px;">
-      <span class="score-label" style="color: #22c55e;">🎯 성공개수</span>
-      <span class="score-value" id="val-success-count" style="color: #22c55e; font-size:18px;">0</span>
-    </div>
-    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">
-    <div class="score-label" style="margin-bottom: 6px;">🔍 현재 활성 주시안</div>
-    <div id="mode-status-badge">프로토콜 대기 중</div>
-    <button id="exit-vr-control" class="exit-vr-btn" onclick="exitVRModeManually()">🔴 훈련중단 및 복귀</button>
-    <div class="center-branding">한국시기능훈련센터 성서계명대점</div>
+    <div style="color: #ef4444; font-size: 18px; margin-bottom: 5px; font-weight: bold;">TIME: <span id="val-time">00:00</span></div>
+    <div style="color: #eab308; font-size: 13px; font-weight: bold; margin-bottom: 4px;">활성 턴: <span id="active-eye-txt" style="color:#ff2a2a;">좌안 (초록풍선)</span></div>
+    <div style="color: #ffffff;">SCORE: <span id="val-score">0000</span></div>
+    <div style="color: #cbd5e1; font-size: 11px; margin-top: 6px;" id="status-txt">준비 버튼을 누르세요.</div>
+    <button id="exit-vr-control" class="exit-vr-btn" onclick="exitVRModeManually()">🔴 훈련 중단 및 복귀</button>
+    <div class="center-branding">성서계명대점</div>
   </div>
 
-  <!-- 결과 모달 -->
   <div id="result-modal">
-    <h1>📊 시각자극 훈련 완료 📊</h1>
-    <p style="color: #aaa; margin: 0;">성서계명대점 데이터 분석 완료</p>
-    <div class="final-score">총 성공 개수: <span id="modal-final-score">0</span> 개</div>
-    <button class="reset-btn" onclick="location.reload()">처음으로 복귀</button>
+    <h1>🎉 안구운동 프로그램 완료 🎉</h1>
+    <p style="color: #aaa; margin: 0;">데이터 분석 및 임상 프로토콜 종료</p>
+    <div class="final-score"><span id="modal-final-score">0</span> 점</div>
+    <button class="reset-btn" onclick="location.reload()">처음으로</button>
   </div>
 
-  <!-- VR 공간 정의 -->
   <a-scene background="color: #000000" vr-mode-ui="enabled: true">
     <a-assets>
       <canvas id="bgCheckerCanvas" width="512" height="512"></canvas>
     </a-assets>
 
-    <!-- 배경 격자 (주변시 유도 차원, 양안 공통 레이어 0,1,2 항시 노출) -->
-    <a-sky id="rotating-bg" src="#bgCheckerCanvas" radius="50" material="shader: flat; repeat: 16 16; side: back; opacity: 1.0;"></a-sky>
+    <a-sky id="rotating-bg" src="#bgCheckerCanvas" radius="50" material="shader: flat; repeat: 16 16; side: back;"></a-sky>
 
-    <!-- 카메라 시스템 -->
     <a-entity id="cameraRig">
       <a-entity id="mainCamera" camera look-controls position="0 1.6 0">
+        <a-entity id="centerFixationRay" raycaster="objects: .gaze-secure-trigger; far: 100; interval: 10;"></a-entity>
         
-        <!-- 시선 레이캐스터 (가상 중심 조준선) -->
-        <a-entity id="centerFixationRay" raycaster="objects: .gaze-secure-trigger; far: 100; interval: 10;" position="0 0 0"></a-entity>
+        <a-ring id="gaze-ring-right" radius-inner="0.022" radius-outer="0.032" color="#10b981" position="0 0 -3.4" material="shader: flat; opacity: 1.0; depthTest: false;" visible="false"></a-ring>
         
-        <!-- 우안 전용 시선 원 (테두리): 색상 초록색 (#10b981), layer: 1 지정 -->
-        <a-ring id="gaze-ring-right" radius-inner="0.018" radius-outer="0.023" color="#10b981" position="0 0 -3.5" material="shader: flat; opacity: 1.0; depthTest: false;" visible="false"></a-ring>
-        
-        <!-- 좌안 전용 시선 원 (테두리): 색상 빨간색 (#ff2a2a), layer: 2 지정 -->
-        <a-ring id="gaze-ring-left" radius-inner="0.018" radius-outer="0.023" color="#ff2a2a" position="0 0 -3.5" material="shader: flat; opacity: 1.0; depthTest: false;" visible="false"></a-ring>
-
+        <a-ring id="gaze-ring-left" radius-inner="0.022" radius-outer="0.032" color="#ff2a2a" position="0 0 -3.4" material="shader: flat; opacity: 1.0; depthTest: false;" visible="false"></a-ring>
       </a-entity>
     </a-entity>
 
-    <!-- 풍선이 심어질 전역 독립 레이어 공간 -->
-    <a-entity id="global-balloon-space"></a-entity>
+    <a-entity id="magic-eye-board" visible="true">
+      <a-entity id="global-target-space"></a-entity>
+    </a-entity>
+
     <a-entity id="particle-group"></a-entity>
   </a-scene>
 
   <script>
-    // 하드웨어 좌우 독립 렌즈에 물리 레이어를 완벽 배정하는 핵심 컴포넌트
-    AFRAME.registerComponent('vr-lens-layer-isolator', {
+    // VR 하드웨어 렌즈 레벨에서 레이어를 완벽 분해하여 링 쪼개짐을 차단하는 렌더링 엔진 컴포넌트
+    AFRAME.registerComponent('vr-hardware-lens-isolator', {
       init: function () {
         this.el.addEventListener('camera-set-active', (evt) => {
           const cameraObj = evt.detail.camera;
           if (cameraObj.isArrayCamera) {
             cameraObj.cameras.forEach((cam) => {
               if (cam.bounds.x > 0) {
-                cam.layers.enable(1);  // 우안 렌즈: 레이어 1 투사 (초록 원, 빨간 풍선 감지)
-                cam.layers.disable(2); // 우안 렌즈: 레이어 2 완전 차단 (좌안 시표 차단)
+                cam.layers.enable(1);  // 우안 렌즈: 레이어 1 강제 매핑 (초록 원 가시화)
+                cam.layers.disable(2); // 우안 렌즈: 레이어 2 차단 (빨간 원 완전 소멸)
               } else {
-                cam.layers.enable(2);  // 좌안 렌즈: 레이어 2 투사 (빨간 원, 초록 풍선 감지)
-                cam.layers.disable(1); // 좌안 렌즈: 레이어 1 완전 차단 (우안 시표 차단)
+                cam.layers.enable(2);  // 좌안 렌즈: 레이어 2 강제 매핑 (빨간 원 가시화)
+                cam.layers.disable(1); // 좌안 렌즈: 레이어 1 차단 (초록 원 완전 소멸)
               }
-              cam.layers.enable(0);    // 배경 격자는 양안 공동 수용
+              cam.layers.enable(0);    // 주변시 배경은 공통 노출
             });
           }
         });
       }
     });
-    document.getElementById('mainCamera').setAttribute('vr-lens-layer-isolator', '');
+    document.getElementById('mainCamera').setAttribute('vr-hardware-lens-isolator', '');
 
+    // 배경 패턴 빌드
     const bgCanvas = document.getElementById('bgCheckerCanvas');
     const bgCtx = bgCanvas.getContext('2d');
-    
-    function drawBackgroundGrid() {
-      const colorStyle = document.getElementById('grid-color-style-select').value;
-      const density = parseInt(document.getElementById('grid-size-slider').value);
-      const bW = 512 / density; const bH = 512 / density;
-      bgCtx.clearRect(0, 0, 512, 512);
-      for (let r = 0; r < density; r++) {
-        for (let c = 0; c < density; c++) {
-          bgCtx.fillStyle = (colorStyle === 'pink-clinical') ? (((r + c) % 2 === 0) ? '#2e1065' : '#ff007f') : (((r + c) % 2 === 0) ? '#FFFFFF' : '#000000');
-          bgCtx.fillRect(c * bW, r * bH, bW, bH);
-        }
+    const bSize = 512; const bRows = 6; const bCols = 6;
+    const bW = bSize / bCols; const bH = bSize / bRows;
+    for (let r = 0; r < bRows; r++) {
+      for (let c = 0; c < bCols; c++) {
+        bgCtx.fillStyle = ((r + c) % 2 === 0) ? '#FFFFFF' : '#000000';
+        bgCtx.fillRect(c * bW, r * bH, bW, bH);
       }
-      const sky = document.getElementById('rotating-bg');
-      if(sky && sky.object3DMap.mesh) sky.object3DMap.mesh.material.map.needsUpdate = true;
     }
 
-    let audioCtx = null; let successCount = 0; 
-    let baseSpeedParam = 3; let isTrainingActive = false; let isPopping = false; 
-    let bgOffsetX = 0; let bgOffsetY = 0; let bgAngle = 0;
-    const PROTOCOL_STAGES = ["right", "left", "up", "down", "cw", "ccw"];
-    let currentStageIndex = 0; let stageDurationSeconds = 120; 
-    let gazeHoldStartTime = null; const VISUAL_DWELL_REQUIRED = 800; let isGazeIntersecting = false;
-    let elapsedInterval = null; let totalSecondsElapsed = 0;      
-    let activeEyeTurn = "right"; 
-    let targetWorldPos = { x: 0, y: 1.6, z: -3.5 };
+    let audioCtx = null; let score = 0; let randomRange = 1.40; 
+    let rotationSpeed = 2; let bgAngle = 0; let isTrainingActive = false; let isPopping = false; 
 
-    // 제어판 슬라이더 연동
-    document.getElementById('bg-opacity-slider').addEventListener('input', (e) => {
-      const opacityVal = parseInt(e.target.value) / 100;
-      document.getElementById('bg-opacity-txt').innerText = e.target.value + "%";
-      const sky = document.getElementById('rotating-bg');
-      if(sky) sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; opacity: ${opacityVal};`);
+    let elapsedInterval = null; let totalSecondsElapsed = 0; let targetSeconds = 600;      
+    let activeTurn = "left"; // 최초 좌안(초록풍선 + 빨간원) 프로토콜 시작
+    let currentX = 0, currentY = 1.6, currentZ = -3.5;
+
+    document.getElementById('range-slider').addEventListener('input', (e) => {
+      randomRange = parseFloat(e.target.value);
+      document.getElementById('range-txt').innerText = randomRange.toFixed(2);
+      if(isTrainingActive) { renderAlternatingTargets(); }
     });
-
     document.getElementById('bg-speed-slider').addEventListener('input', (e) => {
-      baseSpeedParam = parseInt(e.target.value);
-      document.getElementById('bg-speed-txt').innerText = baseSpeedParam;
-    });
-    
-    document.getElementById('grid-size-slider').addEventListener('input', (e) => {
-      document.getElementById('grid-size-txt').innerText = `${e.target.value}x${e.target.value}`;
-      drawBackgroundGrid();
-    });
-    
-    document.getElementById('balloon-size-slider').addEventListener('input', (e) => {
-      document.getElementById('balloon-size-txt').innerText = parseFloat(e.target.value).toFixed(1);
-      rebuildClinicalLayer시표();
+      rotationSpeed = parseInt(e.target.value);
+      document.getElementById('bg-speed-txt').innerText = rotationSpeed;
     });
 
-    document.getElementById('clinical-mode-select').addEventListener('change', () => {
-      updateClinicalBadgePreview();
-      rebuildClinicalLayer시표();
-    });
+    // 안구별 독립 시표 및 링 단독 노출 연산 함수
+    function renderAlternatingTargets() {
+      if (!isTrainingActive) return;
 
-    function toggleDirectionModeUI() {
-      const mode = document.getElementById('bg-mode-select').value;
-      document.getElementById('manual-direction-group').style.display = (mode === 'manual') ? 'block' : 'none';
-      document.getElementById('auto-protocol-time-group').style.display = (mode === 'auto-protocol') ? 'block' : 'none';
-    }
-
-    function updateClinicalBadgePreview() {
-      const mode = document.getElementById('clinical-mode-select').value;
-      const badge = document.getElementById('mode-status-badge');
-      if (mode === "left-only") {
-        activeEyeTurn = "left"; badge.innerText = "🟢 좌안 주시 (초록풍선 + 빨간 테두리 원)"; badge.style.color = "#ff2a2a"; badge.style.borderColor = "#10b981";
-      } else if (mode === "right-only") {
-        activeEyeTurn = "right"; badge.innerText = "🔴 우안 주시 (빨간풍선 + 초록 테두리 원)"; badge.style.color = "#10b981"; badge.style.borderColor = "#ff2a2a";
-      } else {
-        badge.innerText = activeEyeTurn === "right" ? "🔄 MFBF 교대 (현재: 우안 🔴 턴)" : "🔄 MFBF 교대 (현재: 좌안 🟢 턴)";
-        badge.style.color = activeEyeTurn === "right" ? "#ff2a2a" : "#10b981";
-        badge.style.borderColor = "#3b82f6";
-      }
-    }
-
-    // [V31.0 핵심: 안구별 시표 완벽 격리 및 색상 강제 지정]
-    function rebuildClinicalLayer시표() {
-      const globalSpace = document.getElementById('global-balloon-space');
-      const cameraEl = document.getElementById('mainCamera');
+      const targetSpace = document.getElementById('global-target-space');
       const ringRight = document.getElementById('gaze-ring-right');
       const ringLeft = document.getElementById('gaze-ring-left');
       
-      if (!globalSpace || !cameraEl || !ringRight || !ringLeft) return;
-      
-      globalSpace.innerHTML = "";
+      if (!targetSpace || !ringRight || !ringLeft) return;
+
+      // 이전 생성물 완전 소거
+      targetSpace.innerHTML = "";
       ringRight.setAttribute('visible', 'false');
       ringLeft.setAttribute('visible', 'false');
-      
-      if (!isTrainingActive) return;
 
-      const mode = document.getElementById('clinical-mode-select').value;
-      if (mode === "left-only") activeEyeTurn = "left";
-      if (mode === "right-only") activeEyeTurn = "right";
-
-      let camWorldPos = new THREE.Vector3();
-      cameraEl.object3D.getWorldPosition(camWorldPos);
-
-      let camWorldDir = new THREE.Vector3();
-      cameraEl.object3D.getWorldDirection(camWorldDir);
-      camWorldDir.negate(); 
-
-      let randomDistance = 3.2 + (Math.random() * 1.0);
-      
-      // 안구별 테두리 원 깊이 동기화 및 가시성 제어
-      const targetRing = (activeEyeTurn === "right") ? ringRight : ringLeft;
-      targetRing.setAttribute('position', `0 0 ${-randomDistance + 0.05}`);
-      let ringScale = randomDistance / 3.5;
-      targetRing.setAttribute('radius-inner', 0.018 * ringScale);
-      targetRing.setAttribute('radius-outer', 0.023 * ringScale);
-      targetRing.setAttribute('visible', 'true'); 
-
-      // 무작위 주변시 좌표 배치
-      let rightVec = new THREE.Vector3(1, 0, 0).applyQuaternion(cameraEl.object3D.quaternion);
-      let upVec = new THREE.Vector3(0, 1, 0).applyQuaternion(cameraEl.object3D.quaternion);
-
-      let spreadX = (Math.random() > 0.5 ? 1 : -1) * (0.35 + Math.random() * 0.4);
-      let spreadY = (Math.random() > 0.5 ? 1 : -1) * (0.22 + Math.random() * 0.3);
-
-      targetWorldPos.x = camWorldPos.x + (camWorldDir.x * randomDistance) + (rightVec.x * spreadX) + (upVec.x * spreadY);
-      targetWorldPos.y = camWorldPos.y + (camWorldDir.y * randomDistance) + (rightVec.y * spreadX) + (upVec.y * spreadY);
-      targetWorldPos.z = camWorldPos.z + (camWorldDir.z * randomDistance) + (rightVec.z * spreadX) + (upVec.z * spreadY);
-
-      let userBaseMultiplier = parseFloat(document.getElementById('balloon-size-slider').value);
-      let finalRadius = 0.15 * (randomDistance / 3.5) * userBaseMultiplier;
-      if(finalRadius < 0.08) finalRadius = 0.08;
-
-      // 풍선 동적 빌드
-      const balloon = document.createElement('a-entity');
-      balloon.setAttribute('class', 'gaze-secure-trigger');
-      balloon.setAttribute('position', `${targetWorldPos.x} ${targetWorldPos.y} ${targetWorldPos.z}`);
-      balloon.setAttribute('geometry', `primitive: sphere; radius: ${finalRadius}`);
-      
-      // 하드웨어 레이어 주입식 차단 리스너 (반대안 렌즈 전면 차단 원리)
-      balloon.addEventListener('object3dset', (evt) => {
-        const mesh = evt.detail.object3D;
-        if (mesh) {
-          mesh.layers.disable(0);
-          if (activeEyeTurn === "right") {
-            mesh.layers.enable(1);  // 우안 렌즈만 식별 가능
-            mesh.layers.disable(2); // 좌안 렌즈에는 풍선이 아예 안 보임
-          } else {
-            mesh.layers.enable(2);  // 좌안 렌즈만 식별 가능
-            mesh.layers.disable(1); // 우안 렌즈에는 풍선이 아예 안 보임
-          }
-        }
-      });
-
-      // 색상 사양 지정 (우안: 빨간풍선 / 좌안: 초록풍선)
-      if (activeEyeTurn === "right") {
-        balloon.setAttribute('material', 'color: #ff2a2a; roughness: 0.1; metalness: 0.1;');
-      } else {
-        balloon.setAttribute('material', 'color: #10b981; roughness: 0.1; metalness: 0.1;');
+      // 환자 실시간 카메라 기저 연산
+      const cameraEl = document.getElementById('mainCamera');
+      let camPos = {x: 0, y: 1.6, z: 0};
+      if (cameraEl && cameraEl.object3D) {
+        camPos.x = cameraEl.object3D.position.x;
+        camPos.y = cameraEl.object3D.position.y;
+        camPos.z = cameraEl.object3D.position.z;
       }
 
-      globalSpace.appendChild(balloon);
+      let radiusRadius = 0.22; 
+      let baseZ = camPos.z - 3.5; 
+      let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 2.2);
+      let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.6); 
 
-      // 테두리 조준선에도 하드웨어 물리 격리 규칙 재강제
+      if (randY < camPos.y - 0.9) randY = camPos.y - 0.9;
+      if (randY > camPos.y + 1.1) randY = camPos.y + 1.1;
+
+      currentX = randX; currentY = randY; currentZ = baseZ;
+
+      // [핵심 변경] 조준 링 독립 고립 연산
+      if (activeTurn === "right") {
+        // 오른쪽 눈 활성: 빨간풍선 + 초록색 원 (좌안엔 풍선/원 모두 안 보임)
+        document.getElementById('active-eye-txt').innerText = "우안 (빨강풍선 + 초록원)";
+        document.getElementById('active-eye-txt').style.color = "#10b981";
+
+        ringRight.setAttribute('position', `0 0 ${baseZ + 0.05}`);
+        ringRight.setAttribute('visible', 'true');
+
+        // 풍선 구조체 빌드
+        const container = document.createElement('a-entity');
+        const balloon = document.createElement('a-sphere');
+        balloon.setAttribute('color', '#ff2a2a');
+        balloon.setAttribute('radius', radiusRadius);
+        balloon.setAttribute('material', 'roughness: 0.15; metalness: 0.2;');
+
+        const cone = document.createElement('a-cone');
+        cone.setAttribute('color', '#cc1111');
+        cone.setAttribute('radius-top', '0.01');
+        cone.setAttribute('radius-bottom', radiusRadius * 0.15);
+        cone.setAttribute('height', radiusRadius * 0.25);
+        cone.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
+
+        balloon.appendChild(cone);
+        container.appendChild(balloon);
+        container.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+
+        // 레이어 차단 컴포넌트 주입
+        container.addEventListener('object3dset', () => {
+          const obj = container.object3D;
+          if(obj) {
+            obj.layers.disable(0);
+            obj.layers.enable(1);  // 우안 카메라에만 투사
+            obj.layers.disable(2); // 좌안 카메라 뷰포트에서 삭제
+            obj.traverse(c => { if(c.layers) { c.layers.disable(0); c.layers.enable(1); c.layers.disable(2); } });
+          }
+        });
+        targetSpace.appendChild(container);
+
+      } else {
+        // 왼쪽 눈 활성: 초록풍선 + 빨간색 원 (우안엔 풍선/원 모두 안 보임)
+        document.getElementById('active-eye-txt').innerText = "좌안 (초록풍선 + 빨간원)";
+        document.getElementById('active-eye-txt').style.color = "#ff2a2a";
+
+        ringLeft.setAttribute('position', `0 0 ${baseZ + 0.05}`);
+        ringLeft.setAttribute('visible', 'true');
+
+        const container = document.createElement('a-entity');
+        const balloon = document.createElement('a-sphere');
+        balloon.setAttribute('color', '#10b981');
+        balloon.setAttribute('radius', radiusRadius);
+        balloon.setAttribute('material', 'roughness: 0.15; metalness: 0.2;');
+
+        const cone = document.createElement('a-cone');
+        cone.setAttribute('color', '#047857');
+        cone.setAttribute('radius-top', '0.01');
+        cone.setAttribute('radius-bottom', radiusRadius * 0.15);
+        cone.setAttribute('height', radiusRadius * 0.25);
+        cone.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
+
+        balloon.appendChild(cone);
+        container.appendChild(balloon);
+        container.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+
+        container.addEventListener('object3dset', () => {
+          const obj = container.object3D;
+          if(obj) {
+            obj.layers.disable(0);
+            obj.layers.enable(2);  // 좌안 카메라에만 투사
+            obj.layers.disable(1); // 우안 카메라 뷰포트에서 삭제
+            obj.traverse(c => { if(c.layers) { c.layers.disable(0); c.layers.enable(2); c.layers.disable(1); } });
+          }
+        });
+        targetSpace.appendChild(container);
+      }
+
+      // 정조준 인터섹션 감지용 무색 트리거 동기화
+      const secureTrigger = document.createElement('a-entity');
+      secureTrigger.setAttribute('id', 'gaze-collision-trigger');
+      secureTrigger.setAttribute('class', 'gaze-secure-trigger');
+      secureTrigger.setAttribute('geometry', 'primitive: sphere; radius: 0.38');
+      secureTrigger.setAttribute('material', 'visible: false;');
+      secureTrigger.setAttribute('position', `${randX} ${randY} ${baseZ}`);
+      targetSpace.appendChild(secureTrigger);
+
+      // 그래픽 엔진 하드웨어 메모리에 고립 신호 재전달
       setTimeout(() => {
         if(ringRight.object3D) { ringRight.object3D.layers.disable(0); ringRight.object3D.layers.enable(1); ringRight.object3D.layers.disable(2); }
         if(ringLeft.object3D) { ringLeft.object3D.layers.disable(0); ringLeft.object3D.layers.enable(2); ringLeft.object3D.layers.disable(1); }
-      }, 50);
-
-      isGazeIntersecting = false; gazeHoldStartTime = null;
-      updateClinicalBadgePreview();
+      }, 40);
     }
 
-    // 시선 일치 체크
-    function checkClinicalGazeIntersection() {
-      requestAnimationFrame(checkClinicalGazeIntersection);
+    function checkTargetGazeIntersection() {
+      requestAnimationFrame(checkTargetGazeIntersection);
       if (!isTrainingActive || isPopping) return; 
-      
-      const raycasterComponent = document.getElementById('centerFixationRay').components.raycaster;
+
+      const raycasterEl = document.getElementById('centerFixationRay');
+      if (!raycasterEl) return;
+
+      let raycasterComponent = raycasterEl.components.raycaster;
       if (raycasterComponent && raycasterComponent.intersections && raycasterComponent.intersections.length > 0) {
-        if (!isGazeIntersecting) {
-          isGazeIntersecting = true; gazeHoldStartTime = performance.now(); 
-        } else {
-          if (performance.now() - gazeHoldStartTime >= VISUAL_DWELL_REQUIRED) {
-            isPopping = true; popClinicalTargetSuccess();
-          }
-        }
-      } else {
-        if (isGazeIntersecting) { isGazeIntersecting = false; gazeHoldStartTime = null; }
+        const secureTrigger = document.getElementById('gaze-collision-trigger');
+        if (secureTrigger) { secureTrigger.classList.remove('gaze-secure-trigger'); }
+        
+        isPopping = true; 
+        popTargetSuccess();
       }
     }
 
-    function popClinicalTargetSuccess() {
-      successCount++; playPopSound(); 
-      document.getElementById('val-success-count').innerText = successCount;
-      
-      triggerParticlesEmission(targetWorldPos.x, targetWorldPos.y, targetWorldPos.z, 15);
-      
-      const clinicalMode = document.getElementById('clinical-mode-select').value;
-      if (clinicalMode === "mfbf") {
-        activeEyeTurn = (activeEyeTurn === "right") ? "left" : "right";
-      }
+    function popTargetSuccess() {
+      playPopSound(); 
+      score += 1000;
+      document.getElementById('val-score').innerText = score.toString().padStart(4, '0');
 
-      const globalSpace = document.getElementById('global-balloon-space');
-      if(globalSpace) globalSpace.innerHTML = "";
+      triggerParticlesEmission(currentX, currentY, currentZ, 20);
       
+      // 안구 고립 교대
+      activeTurn = (activeTurn === "left") ? "right" : "left";
+      document.getElementById('magic-eye-board').setAttribute('visible', 'false');
+
       setTimeout(() => {
         if (!isTrainingActive) return;
-        isPopping = false; rebuildClinicalLayer시표(); 
-      }, 350); 
+        isPopping = false;
+        renderAlternatingTargets(); 
+        document.getElementById('magic-eye-board').setAttribute('visible', 'true'); 
+      }, 450); 
     }
 
     function animateBackground() {
       requestAnimationFrame(animateBackground);
-      const mode = document.getElementById('bg-mode-select').value;
-      let activeStage = (mode === "manual") ? document.getElementById('bg-direction-select').value : (isTrainingActive ? PROTOCOL_STAGES[currentStageIndex] : "right");
-      let speedFactor = baseSpeedParam * 0.003;
-      const sky = document.getElementById('rotating-bg');
-      if (!sky) return;
-      const opVal = parseInt(document.getElementById('bg-opacity-slider').value) / 100;
-
-      switch(activeStage) {
-        case "right": bgOffsetX += speedFactor; sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; offset: ${bgOffsetX} ${bgOffsetY}; opacity: ${opVal};`); sky.setAttribute('rotation', '0 0 0'); break;
-        case "left": bgOffsetX -= speedFactor; sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; offset: ${bgOffsetX} ${bgOffsetY}; opacity: ${opVal};`); sky.setAttribute('rotation', '0 0 0'); break;
-        case "up": bgOffsetY += speedFactor; sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; offset: ${bgOffsetX} ${bgOffsetY}; opacity: ${opVal};`); sky.setAttribute('rotation', '0 0 0'); break;
-        case "down": bgOffsetY -= speedFactor; sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; offset: ${bgOffsetX} ${bgOffsetY}; opacity: ${opVal};`); sky.setAttribute('rotation', '0 0 0'); break;
-        case "cw": bgAngle += (speedFactor * 0.5); sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; offset: 0 0; opacity: ${opVal};`); sky.setAttribute('rotation', `0 0 ${bgAngle * 57.3}`); break;
-        case "ccw": bgAngle -= (speedFactor * 0.5); sky.setAttribute('material', `shader: flat; repeat: 16 16; side: back; offset: 0 0; opacity: ${opVal};`); sky.setAttribute('rotation', `0 0 ${bgAngle * 57.3}`); break;
+      if (rotationSpeed > 0 && isTrainingActive) {
+        bgAngle += (rotationSpeed * 0.005); 
+        const sky = document.getElementById('rotating-bg');
+        if (sky) sky.setAttribute('rotation', `0 ${bgAngle * 57.3} 0`);
       }
     }
 
     function startElapsedClock() {
       if (elapsedInterval) clearInterval(elapsedInterval);
-      totalSecondsElapsed = 0; currentStageIndex = 0; 
-      const mode = document.getElementById('bg-mode-select').value;
-      if (mode === "auto-protocol") stageDurationSeconds = parseInt(document.getElementById('protocol-interval-select').value);
-      let maxTotalSeconds = (mode === "auto-protocol") ? stageDurationSeconds * 6 : 600; 
-
+      totalSecondsElapsed = 0;
+      document.getElementById('status-txt').innerText = "훈련 진행 중...";
+      
       elapsedInterval = setInterval(() => {
         if (!isTrainingActive) return;
         totalSecondsElapsed++;
-        document.getElementById('val-time').innerText = `${Math.floor(totalSecondsElapsed / 60).toString().padStart(2, '0')}:${(totalSecondsElapsed % 60).toString().padStart(2, '0')}`;
-        if (mode === "auto-protocol") {
-          let calculatedStage = Math.floor(totalSecondsElapsed / stageDurationSeconds);
-          if (calculatedStage < 6) currentStageIndex = calculatedStage;
+        
+        let min = Math.floor(totalSecondsElapsed / 60); let sec = totalSecondsElapsed % 60;
+        document.getElementById('val-time').innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        
+        if (totalSecondsElapsed >= targetSeconds) { 
+          clearInterval(elapsedInterval); 
+          playFanfareAndFinish(); 
         }
-        if (totalSecondsElapsed >= maxTotalSeconds) { clearInterval(elapsedInterval); playFanfareAndFinish(); }
       }, 1000);
     }
 
     function playFanfareAndFinish() {
       isTrainingActive = false;
-      const globalSpace = document.getElementById('global-balloon-space');
-      if(globalSpace) globalSpace.innerHTML = "";
+      document.getElementById('magic-eye-board').setAttribute('visible', 'false');
       document.getElementById('exit-vr-control').style.display = 'none';
+      
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [261.63, 392.00, 523.25, 783.99, 1046.50];
+      
+      const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
       notes.forEach((freq, index) => {
         setTimeout(() => {
-          const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
-          osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-          gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-          osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-          osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-        }, index * 100);
+          const osc = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+          osc.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.4);
+        }, index * 120);
       });
+
       setTimeout(() => {
-        const sceneEl = document.querySelector('a-scene'); if (sceneEl && sceneEl.is('vr-mode')) sceneEl.exitVR();
-        document.getElementById('modal-final-score').innerText = successCount;
+        const sceneEl = document.querySelector('a-scene');
+        if (sceneEl && sceneEl.is('vr-mode')) sceneEl.exitVR();
+        document.getElementById('modal-final-score').innerText = score;
         document.getElementById('result-modal').style.display = 'block';
       }, 1200);
     }
 
     function playPopSound() {
       if (!audioCtx) return;
-      const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
-      osc.type = 'sine'; osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
-      osc.connect(gainNode); gainNode.connect(audioCtx.destination);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+      const osc1 = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+      osc1.type = 'sine'; osc1.frequency.setValueAtTime(440, audioCtx.currentTime); osc1.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+      osc1.connect(gainNode); gainNode.connect(audioCtx.destination);
+      osc1.start(); osc1.stop(audioCtx.currentTime + 0.12);
     }
 
     function triggerParticlesEmission(x, y, z, count) {
@@ -488,50 +389,51 @@
       if(!pGroup) return;
       for (let i = 0; i < count; i++) {
         const p = document.createElement('a-box');
-        p.setAttribute('width', '0.03'); p.setAttribute('height', '0.03'); p.setAttribute('depth', '0.03');
-        p.setAttribute('color', activeEyeTurn === "right" ? "#10b981" : "#ff2a2a"); p.setAttribute('position', `${x} ${y} ${z}`);
-        const vx = (Math.random() - 0.5) * 2.5; const vy = (Math.random() - 0.5) * 2.5 + 1.0; const vz = (Math.random() - 0.5) * 2.5;
-        pGroup.appendChild(p); let age = 0;
+        p.setAttribute('width', '0.04'); p.setAttribute('height', '0.04'); p.setAttribute('depth', '0.04');
+        p.setAttribute('color', activeTurn === "right" ? "#10b981" : "#ff2a2a"); 
+        p.setAttribute('position', `${x} ${y} ${z}`);
+        const vx = (Math.random() - 0.5) * 3; const vy = (Math.random() - 0.5) * 3 + 1.2; const vz = (Math.random() - 0.5) * 3;
+        pGroup.appendChild(p);
+        let age = 0;
         const t = setInterval(() => {
           age += 16;
-          p.setAttribute('position', `${x + vx * (age/1000)} ${y + vy * (age/1000) - (0.5 * 9.8 * (age/1000)*(age/1000))} ${z + vz * (age/1000)}`);
-          if (age > 500) { clearInterval(t); if (p.parentNode) p.parentNode.removeChild(p); }
+          let cx = x + vx * (age/1000); let cy = y + vy * (age/1000) - (0.5 * 9.8 * (age/1000)*(age/1000)); let cz = z + vz * (age/1000);
+          p.setAttribute('position', `${cx} ${cy} ${cz}`);
+          if (age > 800) { clearInterval(t); if (p.parentNode) p.parentNode.removeChild(p); }
         }, 16);
       }
     }
 
     function exitVRModeManually() {
-      isTrainingActive = false; isPopping = false; if (elapsedInterval) clearInterval(elapsedInterval);
-      const globalSpace = document.getElementById('global-balloon-space');
-      if(globalSpace) globalSpace.innerHTML = "";
-      document.getElementById('control-panel').style.display = 'flex';
+      isTrainingActive = false; isPopping = false;
+      if (elapsedInterval) clearInterval(elapsedInterval);
+      const targetSpace = document.getElementById('global-target-space');
+      if(targetSpace) targetSpace.innerHTML = "";
+      document.getElementById('control-panel').style.display = 'block';
       document.getElementById('exit-vr-control').style.display = 'none';
-      updateClinicalBadgePreview();
-      const sceneEl = document.querySelector('a-scene'); if (sceneEl && sceneEl.is('vr-mode')) sceneEl.exitVR();
+      const sceneEl = document.querySelector('a-scene');
+      if (sceneEl && sceneEl.is('vr-mode')) sceneEl.exitVR();
     }
 
-    function startClinicalTraining() {
-      isTrainingActive = true; isPopping = false; successCount = 0;
-      document.getElementById('val-success-count').innerText = "0";
-      drawBackgroundGrid();
+    function startFusionTraining() {
+      isTrainingActive = true; isPopping = false; score = 0;
+      document.getElementById('val-score').innerText = "0000";
+      targetSeconds = parseInt(document.getElementById('training-time-select').value);
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       document.getElementById('control-panel').style.display = 'none';
       document.getElementById('exit-vr-control').style.display = 'block';
       
-      const mode = document.getElementById('clinical-mode-select').value;
-      if (mode === "left-only") activeEyeTurn = "left";
-      else activeEyeTurn = "right"; 
+      activeTurn = "left"; 
+      document.getElementById('magic-eye-board').setAttribute('visible', 'true');
+      renderAlternatingTargets(); 
+      startElapsedClock();
       
-      updateClinicalBadgePreview();
-      rebuildClinicalLayer시표(); startElapsedClock();
       const sceneEl = document.querySelector('a-scene');
       if (sceneEl.hasLoaded) { sceneEl.enterVR(); } else { sceneEl.addEventListener('loaded', () => { sceneEl.enterVR(); }); }
     }
 
-    drawBackgroundGrid();
-    updateClinicalBadgePreview();
     animateBackground();
-    requestAnimationFrame(checkClinicalGazeIntersection);
+    requestAnimationFrame(checkTargetGazeIntersection);
   </script>
 </body>
 </html>
