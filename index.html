@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>VR MFBF 시선 조준 훈련 V14.3 (시선원 동시 분리 & 1초 대기)</title>
+  <title>VR MFBF 시선 조준 훈련 V14.4 (거리 3단계 교차 순환)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
@@ -48,12 +48,12 @@
 <body>
 
   <div id="control-panel">
-    <div class="panel-title">🎯 거리 자동보완 MFBF V14.3</div>
+    <div class="panel-title">🎯 3단계 거리 교차 순환 MFBF V14.4</div>
     
     <div class="panel-group">
-      <label>⚙️ 자동 거리 및 시선 제어</label>
+      <label>⚙️ 시스템 안내</label>
       <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all;">
-        활성화된 눈에만 풍선과 조준 원(Ring)이 동시에 나타납니다. 타겟 조준 후 **1초간 유지**하면 풍선이 팝핑됩니다.
+        활성화된 눈에만 풍선과 조준 원이 보입니다. 풍선은 터질 때마다 <b>근거리 ➔ 중간거리 ➔ 원거리</b> 순으로 교차하여 나타납니다.
       </div>
     </div>
 
@@ -82,6 +82,7 @@
   <div id="score-board">
     <div style="color: #ef4444; font-size: 18px; margin-bottom: 5px;">TIME: <span id="val-time">00:00</span></div>
     <div style="color: #eab308; font-size: 13px; font-weight: bold; margin-bottom: 4px;">활성 타겟: <span id="active-eye-txt" style="color:#ff2a2a;">왼쪽눈 (빨강)</span></div>
+    <div style="color: #38bdf8; font-size: 13px; font-weight: bold; margin-bottom: 4px;">타겟 거리: <span id="active-dist-txt">근거리</span></div>
     <div>SCORE: <span id="val-score">0000</span></div>
     <div style="color: #cbd5e1; font-size: 11px; margin-top: 4px;" id="status-txt">준비 버튼을 누르세요.</div>
     <button id="exit-vr-control" class="exit-vr-btn" onclick="exitVRModeManually()">🔴 훈련 중단 및 복귀</button>
@@ -150,8 +151,10 @@
     let activeTurn = "left"; 
     let currentX = 0, currentY = 1.6, currentZ = -3.5;
 
-    // 1초 조준 유지를 위한 타이머 변수
     let gazeTimer = null;
+
+    // [핵심 추가] 거리를 교차(순환) 시키기 위한 상태 변수 (0: 근거리, 1: 중간거리, 2: 원거리)
+    let distanceState = 0; 
 
     document.getElementById('range-slider').addEventListener('input', (e) => {
       randomRange = parseFloat(e.target.value);
@@ -163,6 +166,7 @@
       document.getElementById('bg-speed-txt').innerText = rotationSpeed;
     });
 
+    // [핵심 변경] 거리 교차 및 원거리 스케일 보정이 적용된 렌더링 함수
     function renderAlternatingTargets() {
       if (!isTrainingActive) return;
 
@@ -174,9 +178,29 @@
         camPos.z = cameraEl.object3D.position.z;
       }
 
-      let radiusRadius = 0.25; 
+      // 1. 현재 distanceState에 맞춰 타겟의 깊이(Z)값과 크기(Radius) 설정값 연산
+      let zOffset = 3.5;       // 기본 근거리
+      let radiusRadius = 0.25; // 기본 풍선 크기
+      let triggerRadius = 0.38;// 기본 충돌 트리거 크기
+      let distText = "근거리 (3.5m)";
 
-      let baseZ = camPos.z - 3.5; 
+      if (distanceState === 1) {
+        zOffset = 7.0;         // 중간거리
+        radiusRadius = 0.45;   // 멀어진 만큼 조금 더 크게 보정
+        triggerRadius = 0.65;
+        distText = "중간거리 (7.0m)";
+      } else if (distanceState === 2) {
+        zOffset = 12.0;        // 원거리
+        radiusRadius = 0.75;   // 멀리서도 조준할 수 있게 대폭 보정
+        triggerRadius = 1.05;
+        distText = "원거리 (12.0m)";
+      }
+      
+      // UI 보드에 현재 거리 단계 업데이트
+      document.getElementById('active-dist-txt').innerText = distText;
+
+      // 2. 환자 카메라 위치 기준 상대 좌표 연산
+      let baseZ = camPos.z - zOffset; 
       let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 2.2);
       let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.6); 
 
@@ -195,7 +219,6 @@
       const coneRight = document.getElementById('cone-right');
       const secureTrigger = document.getElementById('gaze-collision-trigger');
 
-      // 좌우 눈 시선 원(Ring) 엘리먼트 가져오기
       const ringLeft = document.getElementById('gaze-ring-left');
       const ringRight = document.getElementById('gaze-ring-right');
 
@@ -203,7 +226,6 @@
         document.getElementById('active-eye-txt').innerText = "왼쪽눈 (빨강)";
         document.getElementById('active-eye-txt').style.color = "#ff2a2a";
 
-        // 왼쪽 눈 구성요소(풍선 + 시선 원) 활성화, 오른쪽 눈 차단
         cLeft.setAttribute('visible', 'true');
         cRight.setAttribute('visible', 'false');
         ringLeft.setAttribute('visible', 'true');
@@ -219,7 +241,6 @@
         document.getElementById('active-eye-txt').innerText = "오른쪽눈 (초록)";
         document.getElementById('active-eye-txt').style.color = "#10b981";
 
-        // 오른쪽 눈 구성요소(풍선 + 시선 원) 활성화, 왼쪽 눈 차단
         cLeft.setAttribute('visible', 'false');
         cRight.setAttribute('visible', 'true');
         ringLeft.setAttribute('visible', 'false');
@@ -234,7 +255,8 @@
 
       if (secureTrigger) {
         secureTrigger.setAttribute('position', `${randX} ${randY} ${baseZ}`);
-        secureTrigger.setAttribute('geometry', 'primitive: sphere; radius: 0.38');
+        // 거리 상태에 맞춰 연산된 유동적 크기의 트리거 반경 적용
+        secureTrigger.setAttribute('geometry', `primitive: sphere; radius: ${triggerRadius}`);
         if (!isPopping && !secureTrigger.classList.contains('gaze-secure-trigger')) {
           secureTrigger.classList.add('gaze-secure-trigger');
         }
@@ -252,7 +274,6 @@
       });
     }
 
-    // [핵심 변경] 시선이 일치하는 상태가 1초간 유지되어야 터지는 충돌 감지 함수
     function checkTargetGazeIntersection() {
       requestAnimationFrame(checkTargetGazeIntersection);
       if (!isTrainingActive || isPopping) return; 
@@ -262,10 +283,7 @@
 
       let raycasterComponent = raycasterEl.components.raycaster;
       
-      // 시선 레이캐스터가 풍선 트리거와 교차(조준)하고 있는지 확인
       if (raycasterComponent && raycasterComponent.intersections && raycasterComponent.intersections.length > 0) {
-        
-        // 시선이 닿았는데 아직 타이머가 작동 안하고 있다면 1초(1000ms) 타이머 시작
         if (!gazeTimer) {
           document.getElementById('status-txt').innerText = "🎯 조준 중... 유지하세요!";
           gazeTimer = setTimeout(() => {
@@ -273,12 +291,11 @@
             if (secureTrigger) { secureTrigger.classList.remove('gaze-secure-trigger'); }
             
             isPopping = true; 
-            gazeTimer = null; // 타이머 초기화
+            gazeTimer = null;
             popTargetSuccess();
-          }, 1000); // 1초 유지 대기
+          }, 1000); 
         }
       } else {
-        // 시선이 풍선을 벗어났다면 가동 중이던 타이머를 즉시 취소하여 터지지 않게 함
         if (gazeTimer) {
           clearTimeout(gazeTimer);
           gazeTimer = null;
@@ -295,6 +312,10 @@
       triggerParticlesEmission(currentX, currentY, currentZ, 20);
       
       activeTurn = (activeTurn === "left") ? "right" : "left";
+
+      // [핵심 추가] 풍선이 터졌으므로 다음 단계 거리로 교차 변경 (0 ➔ 1 ➔ 2 ➔ 0 반복 순환)
+      distanceState = (distanceState + 1) % 3;
+
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
 
       setTimeout(() => {
@@ -406,6 +427,7 @@
 
     function startFusionTraining() {
       isTrainingActive = true; isPopping = false;
+      distanceState = 0; // 시작 시 근거리부터 초기화
       targetSeconds = parseInt(document.getElementById('training-time-select').value);
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       document.getElementById('control-panel').style.display = 'none';
