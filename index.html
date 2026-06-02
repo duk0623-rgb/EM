@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>VR MFBF 시선 조준 훈련 V14.3 (단안 원 고립)</title>
+  <title>VR MFBF 시선 조준 훈련 V14.3 (시선원 동시 분리 & 1초 대기)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
@@ -51,9 +51,9 @@
     <div class="panel-title">🎯 거리 자동보완 MFBF V14.3</div>
     
     <div class="panel-group">
-      <label>⚙️ 자동 거리 제어 시스템</label>
+      <label>⚙️ 자동 거리 및 시선 제어</label>
       <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all;">
-        환자의 헤드셋 착용 위치와 초기 오차를 실시간 계산하여 **풍선과의 조준 거리를 자동으로 상쇄·보정**합니다.
+        활성화된 눈에만 풍선과 조준 원(Ring)이 동시에 나타납니다. 타겟 조준 후 **1초간 유지**하면 풍선이 팝핑됩니다.
       </div>
     </div>
 
@@ -105,8 +105,8 @@
       <a-entity id="mainCamera" camera look-controls position="0 1.6 0">
         <a-entity id="centerFixationRay" raycaster="objects: .gaze-secure-trigger; far: 100; interval: 15;"></a-entity>
         
-        <a-ring id="gaze-ring-left" radius-inner="0.025" radius-outer="0.038" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: left" visible="false"></a-ring>
-        <a-ring id="gaze-ring-right" radius-inner="0.025" radius-outer="0.038" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: right" visible="false"></a-ring>
+        <a-ring id="gaze-ring-left" radius-inner="0.025" radius-outer="0.038" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: left"></a-ring>
+        <a-ring id="gaze-ring-right" radius-inner="0.025" radius-outer="0.038" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: right"></a-ring>
       </a-entity>
     </a-entity>
 
@@ -150,6 +150,9 @@
     let activeTurn = "left"; 
     let currentX = 0, currentY = 1.6, currentZ = -3.5;
 
+    // 1초 조준 유지를 위한 타이머 변수
+    let gazeTimer = null;
+
     document.getElementById('range-slider').addEventListener('input', (e) => {
       randomRange = parseFloat(e.target.value);
       document.getElementById('range-txt').innerText = randomRange.toFixed(2);
@@ -192,7 +195,7 @@
       const coneRight = document.getElementById('cone-right');
       const secureTrigger = document.getElementById('gaze-collision-trigger');
 
-      // [핵심 수정] 풍선 교대 시선에 맞추어 오직 해당 안구의 흰 원 조준선만 노출시킴으로써 쪼개짐 원천 차단
+      // 좌우 눈 시선 원(Ring) 엘리먼트 가져오기
       const ringLeft = document.getElementById('gaze-ring-left');
       const ringRight = document.getElementById('gaze-ring-right');
 
@@ -200,13 +203,11 @@
         document.getElementById('active-eye-txt').innerText = "왼쪽눈 (빨강)";
         document.getElementById('active-eye-txt').style.color = "#ff2a2a";
 
-        // 왼쪽 눈 풍선 켜기 / 오른쪽 눈 완전 가리기 (V14.2 원본 로직)
+        // 왼쪽 눈 구성요소(풍선 + 시선 원) 활성화, 오른쪽 눈 차단
         cLeft.setAttribute('visible', 'true');
         cRight.setAttribute('visible', 'false');
-
-        // [수정] 조준선 제어 : 왼쪽 눈에만 흰 원 가시화, 오른쪽 눈은 차단하여 절대 두 개로 안 보임
-        if(ringLeft) ringLeft.setAttribute('visible', 'true');
-        if(ringRight) ringRight.setAttribute('visible', 'false');
+        ringLeft.setAttribute('visible', 'true');
+        ringRight.setAttribute('visible', 'false');
 
         bLeft.setAttribute('position', `${randX} ${randY} ${baseZ}`);
         bLeft.setAttribute('radius', radiusRadius);
@@ -218,13 +219,11 @@
         document.getElementById('active-eye-txt').innerText = "오른쪽눈 (초록)";
         document.getElementById('active-eye-txt').style.color = "#10b981";
 
-        // 오른쪽 눈 풍선 켜기 / 왼쪽 눈 완전 가리기 (V14.2 원본 로직)
+        // 오른쪽 눈 구성요소(풍선 + 시선 원) 활성화, 왼쪽 눈 차단
         cLeft.setAttribute('visible', 'false');
         cRight.setAttribute('visible', 'true');
-
-        // [수정] 조준선 제어 : 오른쪽 눈에만 흰 원 가시화, 왼쪽 눈은 차단하여 절대 두 개로 안 보임
-        if(ringLeft) ringLeft.setAttribute('visible', 'false');
-        if(ringRight) ringRight.setAttribute('visible', 'true');
+        ringLeft.setAttribute('visible', 'false');
+        ringRight.setAttribute('visible', 'true');
 
         bRight.setAttribute('position', `${randX} ${randY} ${baseZ}`);
         bRight.setAttribute('radius', radiusRadius);
@@ -253,6 +252,7 @@
       });
     }
 
+    // [핵심 변경] 시선이 일치하는 상태가 1초간 유지되어야 터지는 충돌 감지 함수
     function checkTargetGazeIntersection() {
       requestAnimationFrame(checkTargetGazeIntersection);
       if (!isTrainingActive || isPopping) return; 
@@ -261,13 +261,29 @@
       if (!raycasterEl) return;
 
       let raycasterComponent = raycasterEl.components.raycaster;
+      
+      // 시선 레이캐스터가 풍선 트리거와 교차(조준)하고 있는지 확인
       if (raycasterComponent && raycasterComponent.intersections && raycasterComponent.intersections.length > 0) {
         
-        const secureTrigger = document.getElementById('gaze-collision-trigger');
-        if (secureTrigger) { secureTrigger.classList.remove('gaze-secure-trigger'); }
-        
-        isPopping = true; 
-        popTargetSuccess();
+        // 시선이 닿았는데 아직 타이머가 작동 안하고 있다면 1초(1000ms) 타이머 시작
+        if (!gazeTimer) {
+          document.getElementById('status-txt').innerText = "🎯 조준 중... 유지하세요!";
+          gazeTimer = setTimeout(() => {
+            const secureTrigger = document.getElementById('gaze-collision-trigger');
+            if (secureTrigger) { secureTrigger.classList.remove('gaze-secure-trigger'); }
+            
+            isPopping = true; 
+            gazeTimer = null; // 타이머 초기화
+            popTargetSuccess();
+          }, 1000); // 1초 유지 대기
+        }
+      } else {
+        // 시선이 풍선을 벗어났다면 가동 중이던 타이머를 즉시 취소하여 터지지 않게 함
+        if (gazeTimer) {
+          clearTimeout(gazeTimer);
+          gazeTimer = null;
+          document.getElementById('status-txt').innerText = "훈련 진행 중...";
+        }
       }
     }
 
@@ -280,10 +296,6 @@
       
       activeTurn = (activeTurn === "left") ? "right" : "left";
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
-
-      // 과도기 동안 조준선 원 숨기기
-      document.getElementById('gaze-ring-left').setAttribute('visible', 'false');
-      document.getElementById('gaze-ring-right').setAttribute('visible', 'false');
 
       setTimeout(() => {
         if (!isTrainingActive) return;
@@ -315,6 +327,7 @@
         document.getElementById('val-time').innerText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
         
         if (totalSecondsElapsed >= targetSeconds) { 
+          if(gazeTimer) { clearTimeout(gazeTimer); gazeTimer = null; }
           clearInterval(elapsedInterval); 
           playFanfareAndFinish(); 
         }
@@ -324,8 +337,6 @@
     function playFanfareAndFinish() {
       isTrainingActive = false;
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
-      document.getElementById('gaze-ring-left').setAttribute('visible', 'false');
-      document.getElementById('gaze-ring-right').setAttribute('visible', 'false');
       document.getElementById('exit-vr-control').style.display = 'none';
       
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -384,10 +395,9 @@
 
     function exitVRModeManually() {
       isTrainingActive = false; isPopping = false;
+      if (gazeTimer) { clearTimeout(gazeTimer); gazeTimer = null; }
       if (elapsedInterval) clearInterval(elapsedInterval);
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
-      document.getElementById('gaze-ring-left').setAttribute('visible', 'false');
-      document.getElementById('gaze-ring-right').setAttribute('visible', 'false');
       document.getElementById('control-panel').style.display = 'block';
       document.getElementById('exit-vr-control').style.display = 'none';
       const sceneEl = document.querySelector('a-scene');
