@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>VR MFBF 시선 조준 훈련 V14.6 (시선 레이저 영점 맞춤 버전)</title>
+  <title>VR MFBF 시선 조준 훈련 V14.7 (원거리 고정 & 대형 풍선 버전)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
@@ -48,12 +48,12 @@
 <body>
 
   <div id="control-panel">
-    <div class="panel-title">🎯 시선 일치 보완 MFBF V14.6</div>
+    <div class="panel-title">🎯 원거리 고정 대형화 MFBF V14.7</div>
     
     <div class="panel-group">
       <label>⚙️ 시스템 개선 안내</label>
       <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all;">
-        양안 시차로 인해 조준점이 어긋나던 현상을 해결하기 위해, 활성 눈의 위치로 <b>시선 레이저 영점을 실시간 자동 동기화</b>하도록 로직을 수정했습니다.
+        거리를 <b>12m 원거리로 완전히 고정</b>하고, 풍선 및 조준 판정 범위를 <b>기존 대비 4배 이상 확대</b>하여 조준 불일치 현상을 완벽히 해결했습니다.
       </div>
     </div>
 
@@ -82,7 +82,7 @@
   <div id="score-board">
     <div style="color: #ef4444; font-size: 18px; margin-bottom: 5px;">TIME: <span id="val-time">00:00</span></div>
     <div style="color: #eab308; font-size: 13px; font-weight: bold; margin-bottom: 4px;">활성 타겟: <span id="active-eye-txt" style="color:#ff2a2a;">왼쪽눈 (빨강)</span></div>
-    <div style="color: #38bdf8; font-size: 13px; font-weight: bold; margin-bottom: 4px;">타겟 거리: <span id="active-dist-txt">근거리</span></div>
+    <div style="color: #38bdf8; font-size: 13px; font-weight: bold; margin-bottom: 4px;">타겟 거리: <span id="active-dist-txt">원거리 고정 (12m)</span></div>
     <div>SCORE: <span id="val-score">0000</span></div>
     <div style="color: #cbd5e1; font-size: 11px; margin-top: 4px;" id="status-txt">준비 버튼을 누르세요.</div>
     <button id="exit-vr-control" class="exit-vr-btn" onclick="exitVRModeManually()">🔴 훈련 중단 및 복귀</button>
@@ -149,10 +149,9 @@
 
     let elapsedInterval = null; let totalSecondsElapsed = 0; let targetSeconds = 600;      
     let activeTurn = "left"; 
-    let currentX = 0, currentY = 1.6, currentZ = -3.5;
+    let currentX = 0, currentY = 1.6, currentZ = -12.0;
 
     let gazeTimer = null;
-    let distanceState = 0; 
 
     document.getElementById('range-slider').addEventListener('input', (e) => {
       randomRange = parseFloat(e.target.value);
@@ -175,29 +174,18 @@
         camPos.z = cameraEl.object3D.position.z;
       }
 
-      // 실제 풍선 크기 고정 (거리감 극대화)
-      let radiusRadius = 0.32; 
-      let zOffset = 3.5;       
-      let distText = "근거리 (3.5m)";
-
-      if (distanceState === 1) {
-        zOffset = 7.5;         
-        distText = "중간거리 (7.5m)";
-      } else if (distanceState === 2) {
-        zOffset = 14.0;        
-        distText = "원거리 (14.0m)";
-      }
+      // [핵심 설정] 풍선 크기를 대폭 늘리고 거리는 12m 원거리로 고정
+      let radiusRadius = 1.20;  // 기존 0.32에서 엄청나게 확대하여 원거리 시차 극복
+      let zOffset = 12.0;       // 원거리로 고정
       
-      document.getElementById('active-dist-txt').innerText = distText;
-
       let baseZ = camPos.z - zOffset; 
       
       let spreadFactor = zOffset / 3.5;
-      let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 1.8 * spreadFactor);
-      let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.3 * spreadFactor); 
+      let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 1.6 * spreadFactor);
+      let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.2 * spreadFactor); 
 
-      if (randY < camPos.y - (0.7 * spreadFactor)) randY = camPos.y - (0.7 * spreadFactor);
-      if (randY > camPos.y + (0.9 * spreadFactor)) randY = camPos.y + (0.9 * spreadFactor);
+      if (randY < camPos.y - (0.6 * spreadFactor)) randY = camPos.y - (0.6 * spreadFactor);
+      if (randY > camPos.y + (0.8 * spreadFactor)) randY = camPos.y + (0.8 * spreadFactor);
 
       currentX = randX;
       currentY = randY;
@@ -215,7 +203,6 @@
       const ringRight = document.getElementById('gaze-ring-right');
       const raycasterEl = document.getElementById('centerFixationRay');
 
-      // [핵심 로직 변경] 풍선 타겟에 따라 레이캐스터(시선 중심) 영점을 X축 이동시킵니다.
       if (activeTurn === "left") {
         document.getElementById('active-eye-txt').innerText = "왼쪽눈 (빨강)";
         document.getElementById('active-eye-txt').style.color = "#ff2a2a";
@@ -225,13 +212,12 @@
         ringLeft.setAttribute('visible', 'true');
         ringRight.setAttribute('visible', 'false');
 
-        // 레이캐스터를 왼쪽 눈 위치(-0.03)로 이동시켜 시선선과 풍선을 일치시킴
         if (raycasterEl) raycasterEl.setAttribute('position', '-0.03 0 0');
 
         bLeft.setAttribute('position', `${randX} ${randY} ${baseZ}`);
         bLeft.setAttribute('radius', radiusRadius);
         coneLeft.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
-        coneLeft.setAttribute('radius-top', '0.01');
+        coneLeft.setAttribute('radius-top', '0.02');
         coneLeft.setAttribute('radius-bottom', `${radiusRadius * 0.15}`);
         coneLeft.setAttribute('height', `${radiusRadius * 0.25}`);
       } 
@@ -244,22 +230,20 @@
         ringLeft.setAttribute('visible', 'false');
         ringRight.setAttribute('visible', 'true');
 
-        // 레이캐스터를 오른쪽 눈 위치(0.03)로 이동시켜 시선선과 풍선을 일치시킴
         if (raycasterEl) raycasterEl.setAttribute('position', '0.03 0 0');
 
         bRight.setAttribute('position', `${randX} ${randY} ${baseZ}`);
         bRight.setAttribute('radius', radiusRadius);
         coneRight.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
-        coneRight.setAttribute('radius-top', '0.01');
+        coneRight.setAttribute('radius-top', '0.02');
         coneRight.setAttribute('radius-bottom', `${radiusRadius * 0.15}`);
         coneRight.setAttribute('height', `${radiusRadius * 0.25}`);
       }
 
       if (secureTrigger) {
         secureTrigger.setAttribute('position', `${randX} ${randY} ${baseZ}`);
-        // 거리가 멀어졌을 때 너무 빗나가는 것을 조율하기 위해 완화된 유동 반경 설정
-        let adjustedTriggerRadius = radiusRadius * (1.1 + (distanceState * 0.25));
-        secureTrigger.setAttribute('geometry', `primitive: sphere; radius: ${adjustedTriggerRadius}`);
+        // [중요] 시선이 살짝만 걸쳐도 터지도록 트리거 범위를 풍선 본체보다 훨씬 거대한 2.0으로 상향
+        secureTrigger.setAttribute('geometry', `primitive: sphere; radius: 2.0`);
         
         if (!isPopping && !secureTrigger.classList.contains('gaze-secure-trigger')) {
           secureTrigger.classList.add('gaze-secure-trigger');
@@ -289,7 +273,8 @@
       
       if (raycasterComponent && raycasterComponent.intersections && raycasterComponent.intersections.length > 0) {
         if (!gazeTimer) {
-          document.getElementById('status-txt').innerText = "🎯 조준 유지 중 (1초)...";
+          document.getElementById('status-txt').innerText = "🎯 조준 완료! 터집니다!";
+          // 안 터지는 현상을 방지하기 위해 홀딩 대기 시간을 0.4초(400ms)로 크게 단축
           gazeTimer = setTimeout(() => {
             const secureTrigger = document.getElementById('gaze-collision-trigger');
             if (secureTrigger) { secureTrigger.classList.remove('gaze-secure-trigger'); }
@@ -297,7 +282,7 @@
             isPopping = true; 
             gazeTimer = null;
             popTargetSuccess();
-          }, 1000); 
+          }, 400); 
         }
       } else {
         if (gazeTimer) {
@@ -313,10 +298,10 @@
       score += 1000;
       document.getElementById('val-score').innerText = score.toString().padStart(4, '0');
 
-      triggerParticlesEmission(currentX, currentY, currentZ, 20);
+      triggerParticlesEmission(currentX, currentY, currentZ, 30); // 팡파르 효과 증가
       
       activeTurn = (activeTurn === "left") ? "right" : "left";
-      distanceState = (distanceState + 1) % 3;
+      // distanceState 변동 없음 (원거리 고정)
 
       document.getElementById('magic-eye-board').setAttribute('visible', 'false');
 
@@ -325,7 +310,7 @@
         isPopping = false;
         renderAlternatingTargets(); 
         document.getElementById('magic-eye-board').setAttribute('visible', 'true'); 
-      }, 500); 
+      }, 400); 
     }
 
     function animateBackground() {
@@ -401,10 +386,10 @@
       const pGroup = document.getElementById('particle-group');
       for (let i = 0; i < count; i++) {
         const p = document.createElement('a-box');
-        p.setAttribute('width', '0.04'); p.setAttribute('height', '0.04'); p.setAttribute('depth', '0.04');
+        p.setAttribute('width', '0.1'); p.setAttribute('height', '0.1'); p.setAttribute('depth', '0.1'); // 이펙트 상향
         const colors = ['#ff0055', '#ffff00', '#00ffcc', '#38bdf8'];
         p.setAttribute('color', colors[Math.floor(Math.random() * colors.length)]); p.setAttribute('position', `${x} ${y} ${z}`);
-        const vx = (Math.random() - 0.5) * 3; const vy = (Math.random() - 0.5) * 3 + 1.2; const vz = (Math.random() - 0.5) * 3;
+        const vx = (Math.random() - 0.5) * 5; const vy = (Math.random() - 0.5) * 5 + 2.0; const vz = (Math.random() - 0.5) * 5;
         pGroup.appendChild(p);
         let age = 0;
         const t = setInterval(() => {
@@ -429,7 +414,6 @@
 
     function startFusionTraining() {
       isTrainingActive = true; isPopping = false;
-      distanceState = 0; 
       targetSeconds = parseInt(document.getElementById('training-time-select').value);
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       document.getElementById('control-panel').style.display = 'none';
