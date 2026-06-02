@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>VR MFBF 시선 조준 훈련 V14.5 (정밀 고정크기 & 거리감 강화)</title>
+  <title>VR MFBF 시선 조준 훈련 V14.6 (시선 레이저 영점 맞춤 버전)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
@@ -48,12 +48,12 @@
 <body>
 
   <div id="control-panel">
-    <div class="panel-title">🎯 깊이감 강화 MFBF V14.5</div>
+    <div class="panel-title">🎯 시선 일치 보완 MFBF V14.6</div>
     
     <div class="panel-group">
-      <label>⚙️ 업데이트 안내</label>
+      <label>⚙️ 시스템 개선 안내</label>
       <div style="font-size: 12px; color: #38bdf8; background: rgba(56,189,248,0.1); padding: 9px; border-radius: 6px; line-height: 1.4; word-break: keep-all;">
-        풍선의 크기를 고정하여 멀어질 때 실제로 작아 보이도록 거리감을 개선했습니다. 조준 판정이 엄격해져 원의 중심을 풍선에 <b>1초간 정확히 고정</b>해야 터집니다.
+        양안 시차로 인해 조준점이 어긋나던 현상을 해결하기 위해, 활성 눈의 위치로 <b>시선 레이저 영점을 실시간 자동 동기화</b>하도록 로직을 수정했습니다.
       </div>
     </div>
 
@@ -106,8 +106,8 @@
       <a-entity id="mainCamera" camera look-controls position="0 1.6 0">
         <a-entity id="centerFixationRay" raycaster="objects: .gaze-secure-trigger; far: 100; interval: 10;"></a-entity>
         
-        <a-ring id="gaze-ring-left" radius-inner="0.02" radius-outer="0.03" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: left"></a-ring>
-        <a-ring id="gaze-ring-right" radius-inner="0.02" radius-outer="0.03" color="#ffffff" position="0 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: right"></a-ring>
+        <a-ring id="gaze-ring-left" radius-inner="0.02" radius-outer="0.03" color="#ffffff" position="-0.03 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: left"></a-ring>
+        <a-ring id="gaze-ring-right" radius-inner="0.02" radius-outer="0.03" color="#ffffff" position="0.03 0 -1" material="shader: flat; opacity: 0.8; depthTest: false;" stereo-eye-lock="eye: right"></a-ring>
       </a-entity>
     </a-entity>
 
@@ -164,7 +164,6 @@
       document.getElementById('bg-speed-txt').innerText = rotationSpeed;
     });
 
-    // [핵심 변경] 거리 체감을 극대화하기 위해 크기를 고정하고 트리거 범위를 좁힌 렌더링 함수
     function renderAlternatingTargets() {
       if (!isTrainingActive) return;
 
@@ -176,31 +175,29 @@
         camPos.z = cameraEl.object3D.position.z;
       }
 
-      // 풍선의 고유 물리 크기를 고정하여 깊이 단서(원근법)를 완벽하게 제공합니다.
+      // 실제 풍선 크기 고정 (거리감 극대화)
       let radiusRadius = 0.32; 
-      let zOffset = 3.2;       
-      let distText = "근거리 (3.2m)";
+      let zOffset = 3.5;       
+      let distText = "근거리 (3.5m)";
 
       if (distanceState === 1) {
-        zOffset = 7.0;         // 중간거리 (풍선이 시각적으로 반 이하로 작아짐)
-        distText = "중간거리 (7.0m)";
+        zOffset = 7.5;         
+        distText = "중간거리 (7.5m)";
       } else if (distanceState === 2) {
-        zOffset = 13.5;        // 원거리 (풍선이 아주 작게 보여 먼 곳을 집중하게 만듦)
-        distText = "원거리 (13.5m)";
+        zOffset = 14.0;        
+        distText = "원거리 (14.0m)";
       }
       
       document.getElementById('active-dist-txt').innerText = distText;
 
       let baseZ = camPos.z - zOffset; 
       
-      // 거리가 멀어질수록 좌우 배치 각도가 왜곡되는 것을 막기 위해 zOffset 비례 무작위 확산 적용
       let spreadFactor = zOffset / 3.5;
-      let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 2.0 * spreadFactor);
-      let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.4 * spreadFactor); 
+      let randX = camPos.x + (Math.random() - 0.5) * (randomRange * 1.8 * spreadFactor);
+      let randY = camPos.y + (Math.random() - 0.5) * (randomRange * 1.3 * spreadFactor); 
 
-      // 지면이나 하늘을 너무 벗어나지 않게 한계값 보정
-      if (randY < camPos.y - (0.8 * spreadFactor)) randY = camPos.y - (0.8 * spreadFactor);
-      if (randY > camPos.y + (1.0 * spreadFactor)) randY = camPos.y + (1.0 * spreadFactor);
+      if (randY < camPos.y - (0.7 * spreadFactor)) randY = camPos.y - (0.7 * spreadFactor);
+      if (randY > camPos.y + (0.9 * spreadFactor)) randY = camPos.y + (0.9 * spreadFactor);
 
       currentX = randX;
       currentY = randY;
@@ -216,7 +213,9 @@
 
       const ringLeft = document.getElementById('gaze-ring-left');
       const ringRight = document.getElementById('gaze-ring-right');
+      const raycasterEl = document.getElementById('centerFixationRay');
 
+      // [핵심 로직 변경] 풍선 타겟에 따라 레이캐스터(시선 중심) 영점을 X축 이동시킵니다.
       if (activeTurn === "left") {
         document.getElementById('active-eye-txt').innerText = "왼쪽눈 (빨강)";
         document.getElementById('active-eye-txt').style.color = "#ff2a2a";
@@ -225,6 +224,9 @@
         cRight.setAttribute('visible', 'false');
         ringLeft.setAttribute('visible', 'true');
         ringRight.setAttribute('visible', 'false');
+
+        // 레이캐스터를 왼쪽 눈 위치(-0.03)로 이동시켜 시선선과 풍선을 일치시킴
+        if (raycasterEl) raycasterEl.setAttribute('position', '-0.03 0 0');
 
         bLeft.setAttribute('position', `${randX} ${randY} ${baseZ}`);
         bLeft.setAttribute('radius', radiusRadius);
@@ -242,6 +244,9 @@
         ringLeft.setAttribute('visible', 'false');
         ringRight.setAttribute('visible', 'true');
 
+        // 레이캐스터를 오른쪽 눈 위치(0.03)로 이동시켜 시선선과 풍선을 일치시킴
+        if (raycasterEl) raycasterEl.setAttribute('position', '0.03 0 0');
+
         bRight.setAttribute('position', `${randX} ${randY} ${baseZ}`);
         bRight.setAttribute('radius', radiusRadius);
         coneRight.setAttribute('position', `0 ${-radiusRadius * 1.1} 0`);
@@ -252,8 +257,10 @@
 
       if (secureTrigger) {
         secureTrigger.setAttribute('position', `${randX} ${randY} ${baseZ}`);
-        // [중요] 스치기만 해도 터지는 현상을 막기 위해 트리거 크기를 고정된 풍선 실제 크기와 정밀 동기화
-        secureTrigger.setAttribute('geometry', `primitive: sphere; radius: ${radiusRadius * 1.1}`);
+        // 거리가 멀어졌을 때 너무 빗나가는 것을 조율하기 위해 완화된 유동 반경 설정
+        let adjustedTriggerRadius = radiusRadius * (1.1 + (distanceState * 0.25));
+        secureTrigger.setAttribute('geometry', `primitive: sphere; radius: ${adjustedTriggerRadius}`);
+        
         if (!isPopping && !secureTrigger.classList.contains('gaze-secure-trigger')) {
           secureTrigger.classList.add('gaze-secure-trigger');
         }
